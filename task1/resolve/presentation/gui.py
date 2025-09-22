@@ -16,13 +16,10 @@ class ImageProcessorGUI:
         self._window: Optional[sg.Window] = None
         self._current_histogram_window: Optional[sg.Window] = None
         
-        # Параметры обработки
         self._processing_params = ImageProcessingParameters()
         
-        # Настройка темы
         sg.theme('LightBlue3')
         
-        # Типы файлов для диалогов
         self._image_file_types = (
             ("Все изображения", "*.jpg *.jpeg *.png *.bmp *.tiff *.gif *.webp"),
             ("JPEG", "*.jpg *.jpeg"),
@@ -65,8 +62,7 @@ class ImageProcessorGUI:
                 [sg.Text('Имя файла:', size=(15, 1)), sg.Text('', key='-FILE_NAME-', size=(25, 1))],
             ], font=('Arial', 10), pad=(5, 5))],
             [sg.Frame('EXIF данные', [
-                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 6), disabled=True, 
-                             font=('Courier', 9), background_color='#f0f0f0')]
+                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 6), disabled=True, font=('Courier', 9), background_color='#f0f0f0')]
             ], font=('Arial', 10), pad=(5, 5))],
             [sg.HorizontalSeparator()],
             [sg.Text('Гистограмма:', font=('Arial', 11, 'bold'))],
@@ -78,14 +74,12 @@ class ImageProcessorGUI:
                 sg.Button('Сравнить гистограммы', key='-HIST_COMPARE-', size=(37, 1), disabled=True)
             ]
         ]
-        
-        # Колонка с параметрами обработки
+
         processing_column = [
             [sg.Text('Параметры обработки:', font=('Arial', 12, 'bold'))],
             [
                 sg.Text('Яркость:', size=(12, 1)),
-                sg.Slider(range=(-100, 100), default_value=0, orientation='h', 
-                         size=(20, 15), key='-BRIGHTNESS-', enable_events=True)
+                sg.Slider(range=(-100, 100), default_value=0, orientation='h', size=(20, 15), key='-BRIGHTNESS-', enable_events=True)
             ],
             [
                 sg.Text('Контрастность:', size=(12, 1)),
@@ -114,20 +108,15 @@ class ImageProcessorGUI:
             ],
             [
                 sg.Text('Гамма:', size=(6, 1)),
-                sg.Slider(range=(0.1, 3.0), default_value=1.0, resolution=0.1, orientation='h',
-                         size=(15, 15), key='-GAMMA-'),
+                sg.Slider(range=(0.1, 3.0), default_value=1.0, resolution=0.1, orientation='h', size=(15, 15), key='-GAMMA-'),
                 sg.Button('Нелинейная', key='-NONLINEAR_CORRECT-', size=(10, 1), disabled=True)
             ]
         ]
-        
-        # Правая колонка с прокруткой
         right_column_scrollable = [
             [sg.Column(info_column, vertical_alignment='top')],
             [sg.HorizontalSeparator()],
             [sg.Column(processing_column, vertical_alignment='top')]
         ]
-        
-        # Основной макет
         layout = [
             [
                 sg.Column(image_column, vertical_alignment='top'),
@@ -137,7 +126,7 @@ class ImageProcessorGUI:
                     vertical_alignment='top',
                     scrollable=True,
                     vertical_scroll_only=True,
-                    size=(450, 700),  # Ширина и высота прокручиваемой области
+                    size=(450, 700),
                     pad=(5, 5)
                 )
             ],
@@ -161,7 +150,7 @@ class ImageProcessorGUI:
             finalize=True,
             resizable=True,
             location=(50, 50),
-            size=(1400, 800)  # Устанавливаем начальный размер окна
+            size=(1400, 800)
         )
         
         return window
@@ -189,7 +178,6 @@ class ImageProcessorGUI:
         try:
             info = self._image_service.get_image_info()
             if info and self._window:
-                # Обновляем основные параметры
                 self._window['-FILE_SIZE-'].update(info.get('Размер файла', ''))
                 self._window['-RESOLUTION-'].update(info.get('Разрешение', ''))
                 self._window['-COLOR_DEPTH-'].update(info.get('Глубина цвета', ''))
@@ -197,20 +185,16 @@ class ImageProcessorGUI:
                 self._window['-COLOR_MODEL-'].update(info.get('Цветовая модель', ''))
                 self._window['-MODIFIED-'].update(info.get('Модифицировано', ''))
                 
-                # Обновляем дополнительную информацию
                 file_path = info.get('Путь к файлу', '')
-                # Сокращаем длинный путь для красивого отображения
                 if len(file_path) > 40:
                     file_path = '...' + file_path[-37:]
                 self._window['-FILE_PATH-'].update(file_path)
                 self._window['-FILE_NAME-'].update(info.get('Имя файла', ''))
                 
-                # Формируем EXIF информацию
                 exif_lines = []
                 for key, value in info.items():
                     if key.startswith('EXIF:'):
                         exif_key = key.replace('EXIF: ', '')
-                        # Ограничиваем длину строки для красивого отображения
                         if len(str(value)) > 50:
                             value = str(value)[:47] + '...'
                         exif_lines.append(f'{exif_key:<20}: {value}')
@@ -230,7 +214,6 @@ class ImageProcessorGUI:
         if not self._window:
             return
         
-        # Очищаем основные параметры
         self._window['-FILE_SIZE-'].update('')
         self._window['-RESOLUTION-'].update('')
         self._window['-COLOR_DEPTH-'].update('')
@@ -238,11 +221,9 @@ class ImageProcessorGUI:
         self._window['-COLOR_MODEL-'].update('')
         self._window['-MODIFIED-'].update('')
         
-        # Очищаем дополнительную информацию
         self._window['-FILE_PATH-'].update('')
         self._window['-FILE_NAME-'].update('')
         
-        # Очищаем EXIF данные
         self._window['-EXIF_INFO-'].update('')
     
     def enable_image_controls(self, enabled: bool) -> None:
@@ -258,7 +239,6 @@ class ImageProcessorGUI:
         for control in controls:
             self._window[control].update(disabled=not enabled)
         
-        # Коррекция доступна только для ч/б изображений
         is_grayscale = (enabled and 
                        self._image_service.current_image and 
                        self._image_service.current_image.is_grayscale())
@@ -369,7 +349,6 @@ class ImageProcessorGUI:
                 self.update_status('Не удалось получить гистограммы для сравнения')
                 return
             
-            # Создаем окно с двумя гистограммами
             current_bytes = self._image_service.plot_histogram(current_hist, '(Текущее)')
             original_bytes = self._image_service.plot_histogram(original_hist, '(Оригинальное)')
             
@@ -427,7 +406,6 @@ class ImageProcessorGUI:
         
         try:
             while True:
-                # Обрабатываем события главного окна
                 window, event, values = sg.read_all_windows(timeout=100)
                 
                 if event == sg.WIN_CLOSED or event == '-EXIT-':
@@ -477,7 +455,6 @@ class ImageProcessorGUI:
                 self.apply_processing_params()
             
             elif event in ['-BRIGHTNESS-', '-CONTRAST-', '-SATURATION-']:
-                # Обновляем параметры из слайдеров
                 self._processing_params.brightness = values['-BRIGHTNESS-']
                 self._processing_params.contrast = values['-CONTRAST-']
                 self._processing_params.saturation = values['-SATURATION-']
