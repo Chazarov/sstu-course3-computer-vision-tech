@@ -1,6 +1,3 @@
-"""
-Графический интерфейс приложения на основе FreeSimpleGUI.
-"""
 from typing import Optional, Dict, Any
 import FreeSimpleGUI as sg
 import io
@@ -68,17 +65,17 @@ class ImageProcessorGUI:
                 [sg.Text('Имя файла:', size=(15, 1)), sg.Text('', key='-FILE_NAME-', size=(25, 1))],
             ], font=('Arial', 10), pad=(5, 5))],
             [sg.Frame('EXIF данные', [
-                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 8), disabled=True, 
+                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 6), disabled=True, 
                              font=('Courier', 9), background_color='#f0f0f0')]
             ], font=('Arial', 10), pad=(5, 5))],
             [sg.HorizontalSeparator()],
             [sg.Text('Гистограмма:', font=('Arial', 11, 'bold'))],
             [
-                sg.Button('Показать текущую', key='-HIST_CURRENT-', size=(15, 2), disabled=True),
-                sg.Button('Показать оригинальную', key='-HIST_ORIGINAL-', size=(15, 2), disabled=True)
+                sg.Button('Показать текущую', key='-HIST_CURRENT-', size=(18, 1), disabled=True),
+                sg.Button('Показать оригинальную', key='-HIST_ORIGINAL-', size=(18, 1), disabled=True)
             ],
             [
-                sg.Button('Сравнить гистограммы', key='-HIST_COMPARE-', size=(15, 2), disabled=True)
+                sg.Button('Сравнить гистограммы', key='-HIST_COMPARE-', size=(37, 1), disabled=True)
             ]
         ]
         
@@ -123,16 +120,26 @@ class ImageProcessorGUI:
             ]
         ]
         
+        # Правая колонка с прокруткой
+        right_column_scrollable = [
+            [sg.Column(info_column, vertical_alignment='top')],
+            [sg.HorizontalSeparator()],
+            [sg.Column(processing_column, vertical_alignment='top')]
+        ]
+        
         # Основной макет
         layout = [
             [
                 sg.Column(image_column, vertical_alignment='top'),
                 sg.VerticalSeparator(),
-                sg.Column([
-                    [sg.Column(info_column, vertical_alignment='top')],
-                    [sg.HorizontalSeparator()],
-                    [sg.Column(processing_column, vertical_alignment='top')]
-                ], vertical_alignment='top')
+                sg.Column(
+                    right_column_scrollable, 
+                    vertical_alignment='top',
+                    scrollable=True,
+                    vertical_scroll_only=True,
+                    size=(450, 700),  # Ширина и высота прокручиваемой области
+                    pad=(5, 5)
+                )
             ],
             [sg.HorizontalSeparator()],
             [
@@ -152,8 +159,9 @@ class ImageProcessorGUI:
             'Обработка изображений',
             layout,
             finalize=True,
-            resizable=False,
-            location=(100, 50)
+            resizable=True,
+            location=(50, 50),
+            size=(1400, 800)  # Устанавливаем начальный размер окна
         )
         
         return window
