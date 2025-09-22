@@ -195,7 +195,7 @@ class ImageService:
         
         info = self._current_image.info
         return {
-            "Размер файла": f"{info.file_size_mb:.2f} МБ ({info.file_size} байт)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+            "Размер файла": f"{info.file_size_mb:.2f} МБ ({info.file_size} байт)",
             "Разрешение": f"{info.width} x {info.height}",
             "Глубина цвета": f"{info.color_depth} бит",
             "Формат файла": info.format.value,

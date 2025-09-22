@@ -55,7 +55,22 @@ class ImageProcessorGUI:
         # Колонка с информацией об изображении
         info_column = [
             [sg.Text('Информация об изображении:', font=('Arial', 12, 'bold'))],
-            [sg.Multiline('', key='-INFO-', size=(40, 15), disabled=True, font=('Courier', 10))],
+            [sg.Frame('Основные параметры', [
+                [sg.Text('Размер файла:', size=(15, 1)), sg.Text('', key='-FILE_SIZE-', size=(25, 1))],
+                [sg.Text('Разрешение:', size=(15, 1)), sg.Text('', key='-RESOLUTION-', size=(25, 1))],
+                [sg.Text('Глубина цвета:', size=(15, 1)), sg.Text('', key='-COLOR_DEPTH-', size=(25, 1))],
+                [sg.Text('Формат файла:', size=(15, 1)), sg.Text('', key='-FORMAT-', size=(25, 1))],
+                [sg.Text('Цветовая модель:', size=(15, 1)), sg.Text('', key='-COLOR_MODEL-', size=(25, 1))],
+                [sg.Text('Модифицировано:', size=(15, 1)), sg.Text('', key='-MODIFIED-', size=(25, 1))],
+            ], font=('Arial', 10), pad=(5, 5))],
+            [sg.Frame('Дополнительная информация', [
+                [sg.Text('Путь к файлу:', size=(15, 1)), sg.Text('', key='-FILE_PATH-', size=(25, 1))],
+                [sg.Text('Имя файла:', size=(15, 1)), sg.Text('', key='-FILE_NAME-', size=(25, 1))],
+            ], font=('Arial', 10), pad=(5, 5))],
+            [sg.Frame('EXIF данные', [
+                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 8), disabled=True, 
+                             font=('Courier', 9), background_color='#f0f0f0')]
+            ], font=('Arial', 10), pad=(5, 5))],
             [sg.HorizontalSeparator()],
             [sg.Text('Гистограмма:', font=('Arial', 11, 'bold'))],
             [
@@ -166,11 +181,61 @@ class ImageProcessorGUI:
         try:
             info = self._image_service.get_image_info()
             if info and self._window:
-                info_text = '\\n'.join([f'{key}: {value}' for key, value in info.items()])
-                self._window['-INFO-'].update(info_text)
+                # Обновляем основные параметры
+                self._window['-FILE_SIZE-'].update(info.get('Размер файла', ''))
+                self._window['-RESOLUTION-'].update(info.get('Разрешение', ''))
+                self._window['-COLOR_DEPTH-'].update(info.get('Глубина цвета', ''))
+                self._window['-FORMAT-'].update(info.get('Формат файла', ''))
+                self._window['-COLOR_MODEL-'].update(info.get('Цветовая модель', ''))
+                self._window['-MODIFIED-'].update(info.get('Модифицировано', ''))
+                
+                # Обновляем дополнительную информацию
+                file_path = info.get('Путь к файлу', '')
+                # Сокращаем длинный путь для красивого отображения
+                if len(file_path) > 40:
+                    file_path = '...' + file_path[-37:]
+                self._window['-FILE_PATH-'].update(file_path)
+                self._window['-FILE_NAME-'].update(info.get('Имя файла', ''))
+                
+                # Формируем EXIF информацию
+                exif_lines = []
+                for key, value in info.items():
+                    if key.startswith('EXIF:'):
+                        exif_key = key.replace('EXIF: ', '')
+                        # Ограничиваем длину строки для красивого отображения
+                        if len(str(value)) > 50:
+                            value = str(value)[:47] + '...'
+                        exif_lines.append(f'{exif_key:<20}: {value}')
+                
+                if exif_lines:
+                    exif_text = '\n'.join(exif_lines)
+                else:
+                    exif_text = 'EXIF данные отсутствуют или недоступны'
+                
+                self._window['-EXIF_INFO-'].update(exif_text)
                 
         except Exception as e:
             self.update_status(f'Ошибка получения информации: {str(e)}')
+    
+    def clear_image_info(self) -> None:
+        """Очищает информацию об изображении"""
+        if not self._window:
+            return
+        
+        # Очищаем основные параметры
+        self._window['-FILE_SIZE-'].update('')
+        self._window['-RESOLUTION-'].update('')
+        self._window['-COLOR_DEPTH-'].update('')
+        self._window['-FORMAT-'].update('')
+        self._window['-COLOR_MODEL-'].update('')
+        self._window['-MODIFIED-'].update('')
+        
+        # Очищаем дополнительную информацию
+        self._window['-FILE_PATH-'].update('')
+        self._window['-FILE_NAME-'].update('')
+        
+        # Очищаем EXIF данные
+        self._window['-EXIF_INFO-'].update('')
     
     def enable_image_controls(self, enabled: bool) -> None:
         """Включает/выключает элементы управления изображением"""
@@ -210,6 +275,8 @@ class ImageProcessorGUI:
                 self.reset_processing_params()
             else:
                 self.update_status('Ошибка загрузки изображения')
+                self.clear_image_info()
+                self.enable_image_controls(False)
                 
         except Exception as e:
             self.update_status(f'Ошибка: {str(e)}')
