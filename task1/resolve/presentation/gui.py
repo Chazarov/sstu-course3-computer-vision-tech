@@ -74,11 +74,11 @@ class ImageProcessorGUI:
             [sg.HorizontalSeparator()],
             [sg.Text('Гистограмма:', font=('Arial', 11, 'bold'))],
             [
-                sg.Button('Показать текущую', key='-HIST_CURRENT-', size=(15, 1), disabled=True),
-                sg.Button('Показать оригинальную', key='-HIST_ORIGINAL-', size=(15, 1), disabled=True)
+                sg.Button('Показать текущую', key='-HIST_CURRENT-', size=(15, 2), disabled=True),
+                sg.Button('Показать оригинальную', key='-HIST_ORIGINAL-', size=(15, 2), disabled=True)
             ],
             [
-                sg.Button('Сравнить гистограммы', key='-HIST_COMPARE-', size=(15, 1), disabled=True)
+                sg.Button('Сравнить гистограммы', key='-HIST_COMPARE-', size=(15, 2), disabled=True)
             ]
         ]
         
