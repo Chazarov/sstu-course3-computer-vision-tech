@@ -106,27 +106,41 @@ class ImageService:
         except Exception:
             return False
     
-    def apply_linear_correction(self, min_val: int, max_val: int) -> bool:
-        """Применяет линейную коррекцию к черно-белому изображению"""
-        if not self._current_image or not self._current_image.is_grayscale():
+    def apply_linear_correction(self, factor: float) -> bool:
+        """Применяет линейную коррекцию к изображению"""
+        if not self._current_image:
             return False
         
         try:
             corrected_data = self._image_processor.apply_linear_correction(
-                self._current_image.current_data, min_val, max_val
+                self._current_image.current_data, factor
             )
             self._current_image.update_data(corrected_data)
             return True
         except Exception:
             return False
     
-    def apply_nonlinear_correction(self, gamma: float) -> bool:
-        """Применяет нелинейную коррекцию к черно-белому изображению"""
-        if not self._current_image or not self._current_image.is_grayscale():
+    def apply_logarithmic_correction(self, factor: float) -> bool:
+        """Применяет логарифмическую коррекцию к изображению"""
+        if not self._current_image:
             return False
         
         try:
-            corrected_data = self._image_processor.apply_nonlinear_correction(
+            corrected_data = self._image_processor.apply_logarithmic_correction(
+                self._current_image.current_data, factor
+            )
+            self._current_image.update_data(corrected_data)
+            return True
+        except Exception:
+            return False
+    
+    def apply_gamma_correction(self, gamma: float) -> bool:
+        """Применяет гамма коррекцию к изображению"""
+        if not self._current_image:
+            return False
+        
+        try:
+            corrected_data = self._image_processor.apply_gamma_correction(
                 self._current_image.current_data, gamma
             )
             self._current_image.update_data(corrected_data)

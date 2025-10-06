@@ -98,18 +98,21 @@ class ImageProcessorGUI:
                 sg.Button('Повернуть на 90°', key='-ROTATE-', size=(18, 1), disabled=True)
             ],
             [sg.HorizontalSeparator()],
-            [sg.Text('Коррекция ч/б изображения:', font=('Arial', 11, 'bold'))],
+            [sg.Text('Коррекция изображения:', font=('Arial', 11, 'bold'))],
             [
-                sg.Text('Мин:', size=(4, 1)),
-                sg.Input('0', key='-LINEAR_MIN-', size=(6, 1)),
-                sg.Text('Макс:', size=(4, 1)),
-                sg.Input('255', key='-LINEAR_MAX-', size=(6, 1)),
-                sg.Button('Линейная', key='-LINEAR_CORRECT-', size=(10, 1), disabled=True)
+                sg.Text('Линейная:', size=(8, 1)),
+                sg.Slider(range=(0.1, 2.0), default_value=1.0, resolution=0.1, orientation='h', size=(15, 15), key='-LINEAR_FACTOR-', enable_events=True),
+                sg.Button('Применить', key='-LINEAR_CORRECT-', size=(8, 1), disabled=True)
             ],
             [
-                sg.Text('Гамма:', size=(6, 1)),
-                sg.Slider(range=(0.1, 3.0), default_value=1.0, resolution=0.1, orientation='h', size=(15, 15), key='-GAMMA-'),
-                sg.Button('Нелинейная', key='-NONLINEAR_CORRECT-', size=(10, 1), disabled=True)
+                sg.Text('Логарифмическая:', size=(12, 1)),
+                sg.Slider(range=(0.1, 2.0), default_value=1.0, resolution=0.1, orientation='h', size=(11, 15), key='-LOG_FACTOR-', enable_events=True),
+                sg.Button('Применить', key='-LOG_CORRECT-', size=(8, 1), disabled=True)
+            ],
+            [
+                sg.Text('Гамма:', size=(8, 1)),
+                sg.Slider(range=(0.1, 3.0), default_value=1.0, resolution=0.1, orientation='h', size=(15, 15), key='-GAMMA_FACTOR-', enable_events=True),
+                sg.Button('Применить', key='-GAMMA_CORRECT-', size=(8, 1), disabled=True)
             ]
         ]
         right_column_scrollable = [
@@ -233,18 +236,12 @@ class ImageProcessorGUI:
         
         controls = [
             '-SAVE-', '-RESET-', '-GRAYSCALE-', '-ROTATE-',
-            '-HIST_CURRENT-', '-HIST_ORIGINAL-', '-HIST_COMPARE-'
+            '-HIST_CURRENT-', '-HIST_ORIGINAL-', '-HIST_COMPARE-',
+            '-LINEAR_CORRECT-', '-LOG_CORRECT-', '-GAMMA_CORRECT-'
         ]
         
         for control in controls:
             self._window[control].update(disabled=not enabled)
-        
-        is_grayscale = (enabled and 
-                       self._image_service.current_image and 
-                       self._image_service.current_image.is_grayscale())
-        
-        self._window['-LINEAR_CORRECT-'].update(disabled=not is_grayscale)
-        self._window['-NONLINEAR_CORRECT-'].update(disabled=not is_grayscale)
     
     def load_image(self) -> None:
         """Загружает изображение"""
@@ -296,7 +293,9 @@ class ImageProcessorGUI:
         self._window['-BRIGHTNESS-'].update(0)
         self._window['-CONTRAST-'].update(1.0)
         self._window['-SATURATION-'].update(1.0)
-        self._window['-GAMMA-'].update(1.0)
+        self._window['-LINEAR_FACTOR-'].update(1.0)
+        self._window['-LOG_FACTOR-'].update(1.0)
+        self._window['-GAMMA_FACTOR-'].update(1.0)
         self._processing_params = ImageProcessingParameters()
     
     def apply_processing_params(self) -> None:
@@ -461,24 +460,28 @@ class ImageProcessorGUI:
                 self.apply_processing_params()
             
             elif event == '-LINEAR_CORRECT-':
-                try:
-                    min_val = int(values['-LINEAR_MIN-'])
-                    max_val = int(values['-LINEAR_MAX-'])
-                    if self._image_service.apply_linear_correction(min_val, max_val):
-                        self.update_image_display()
-                        self.update_status('Линейная коррекция применена')
-                    else:
-                        self.update_status('Ошибка линейной коррекции')
-                except ValueError:
-                    self.update_status('Неверные значения для линейной коррекции')
-            
-            elif event == '-NONLINEAR_CORRECT-':
-                gamma = values['-GAMMA-']
-                if self._image_service.apply_nonlinear_correction(gamma):
+                factor = values['-LINEAR_FACTOR-']
+                if self._image_service.apply_linear_correction(factor):
                     self.update_image_display()
-                    self.update_status('Нелинейная коррекция применена')
+                    self.update_status('Линейная коррекция применена')
                 else:
-                    self.update_status('Ошибка нелинейной коррекции')
+                    self.update_status('Ошибка линейной коррекции')
+            
+            elif event == '-LOG_CORRECT-':
+                factor = values['-LOG_FACTOR-']
+                if self._image_service.apply_logarithmic_correction(factor):
+                    self.update_image_display()
+                    self.update_status('Логарифмическая коррекция применена')
+                else:
+                    self.update_status('Ошибка логарифмической коррекции')
+            
+            elif event == '-GAMMA_CORRECT-':
+                gamma = values['-GAMMA_FACTOR-']
+                if self._image_service.apply_gamma_correction(gamma):
+                    self.update_image_display()
+                    self.update_status('Гамма коррекция применена')
+                else:
+                    self.update_status('Ошибка гамма коррекции')
             
             elif event == '-HIST_CURRENT-':
                 self.show_histogram('current')

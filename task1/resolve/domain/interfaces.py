@@ -66,13 +66,18 @@ class IImageProcessor(ABC):
         pass
     
     @abstractmethod
-    def apply_linear_correction(self, image_data: np.ndarray, min_val: int, max_val: int) -> np.ndarray:
-        """Применяет линейную коррекцию к черно-белому изображению"""
+    def apply_linear_correction(self, image_data: np.ndarray, factor: float) -> np.ndarray:
+        """Применяет линейную коррекцию к изображению"""
         pass
     
     @abstractmethod
-    def apply_nonlinear_correction(self, image_data: np.ndarray, gamma: float) -> np.ndarray:
-        """Применяет нелинейную (гамма) коррекцию к черно-белому изображению"""
+    def apply_logarithmic_correction(self, image_data: np.ndarray, factor: float) -> np.ndarray:
+        """Применяет логарифмическую коррекцию к изображению"""
+        pass
+    
+    @abstractmethod
+    def apply_gamma_correction(self, image_data: np.ndarray, gamma: float) -> np.ndarray:
+        """Применяет гамма коррекцию к изображению"""
         pass
 
 

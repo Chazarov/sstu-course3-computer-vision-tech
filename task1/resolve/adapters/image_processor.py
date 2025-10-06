@@ -114,37 +114,63 @@ class PillowImageProcessor(IImageProcessor):
             print(f"Ошибка поворота изображения: {e}")
             raise
     
-    def apply_linear_correction(self, image_data: np.ndarray, min_val: int, max_val: int) -> np.ndarray:
-        """Применяет линейную коррекцию к черно-белому изображению"""
+    def apply_linear_correction(self, image_data: np.ndarray, factor: float) -> np.ndarray:
+        """Применяет линейную коррекцию к изображению
+        
+        Args:
+            image_data: Массив изображения
+            factor: Коэффициент коррекции (0.1 - 2.0)
+        """
         try:
-            if len(image_data.shape) != 2:
-                raise ValueError("Линейная коррекция применяется только к черно-белым изображениям")
+            # Нормализуем к диапазону [0, 1]
+            normalized = image_data.astype(np.float32) / 255.0
             
-            # Находим текущие минимальные и максимальные значения
-            current_min = np.min(image_data)
-            current_max = np.max(image_data)
+            # Применяем линейное преобразование: new_value = factor * old_value
+            corrected = normalized * factor
             
-            if current_max == current_min:
-                return image_data
+            # Возвращаем к диапазону [0, 255]
+            corrected = np.clip(corrected, 0, 1) * 255
+            corrected = corrected.astype(np.uint8)
             
-            # Применяем линейное преобразование
-            # new_value = (old_value - current_min) * (max_val - min_val) / (current_max - current_min) + min_val
-            corrected = ((image_data.astype(np.float32) - current_min) * 
-                        (max_val - min_val) / (current_max - current_min) + min_val)
-            
-            corrected = np.clip(corrected, 0, 255).astype(np.uint8)
             return corrected
             
         except Exception as e:
             print(f"Ошибка линейной коррекции: {e}")
             raise
     
-    def apply_nonlinear_correction(self, image_data: np.ndarray, gamma: float) -> np.ndarray:
-        """Применяет нелинейную (гамма) коррекцию к черно-белому изображению"""
+    def apply_logarithmic_correction(self, image_data: np.ndarray, factor: float) -> np.ndarray:
+        """Применяет логарифмическую коррекцию к изображению
+        
+        Args:
+            image_data: Массив изображения
+            factor: Коэффициент коррекции (0.1 - 2.0)
+        """
         try:
-            if len(image_data.shape) != 2:
-                raise ValueError("Нелинейная коррекция применяется только к черно-белым изображениям")
+            # Нормализуем к диапазону [0, 1]
+            normalized = image_data.astype(np.float32) / 255.0
             
+            # Применяем логарифмическое преобразование
+            # new_value = factor * log(1 + old_value) / log(2)
+            corrected = factor * np.log(1 + normalized) / np.log(2)
+            
+            # Возвращаем к диапазону [0, 255]
+            corrected = np.clip(corrected, 0, 1) * 255
+            corrected = corrected.astype(np.uint8)
+            
+            return corrected
+            
+        except Exception as e:
+            print(f"Ошибка логарифмической коррекции: {e}")
+            raise
+    
+    def apply_gamma_correction(self, image_data: np.ndarray, gamma: float) -> np.ndarray:
+        """Применяет гамма коррекцию к изображению
+        
+        Args:
+            image_data: Массив изображения
+            gamma: Значение гаммы (0.1 - 3.0)
+        """
+        try:
             # Нормализуем к диапазону [0, 1]
             normalized = image_data.astype(np.float32) / 255.0
             
@@ -152,10 +178,11 @@ class PillowImageProcessor(IImageProcessor):
             corrected = np.power(normalized, gamma)
             
             # Возвращаем к диапазону [0, 255]
-            corrected = (corrected * 255).astype(np.uint8)
+            corrected = np.clip(corrected, 0, 1) * 255
+            corrected = corrected.astype(np.uint8)
             
             return corrected
             
         except Exception as e:
-            print(f"Ошибка нелинейной коррекции: {e}")
+            print(f"Ошибка гамма коррекции: {e}")
             raise
