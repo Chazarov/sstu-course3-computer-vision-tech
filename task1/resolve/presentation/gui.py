@@ -58,8 +58,8 @@ class ImageProcessorGUI:
                 [sg.Text('Модифицировано:', size=(15, 1)), sg.Text('', key='-MODIFIED-', size=(25, 1))],
             ], font=('Arial', 10), pad=(5, 5))],
             [sg.Frame('Дополнительная информация', [
-                [sg.Text('Путь к файлу:', size=(15, 1)), sg.Text('', key='-FILE_PATH-', size=(25, 1))],
-                [sg.Text('Имя файла:', size=(15, 1)), sg.Text('', key='-FILE_NAME-', size=(25, 1))],
+                [sg.Text('Путь к файлу:', size=(15, 1)), sg.Text('', key='-FILE_PATH-', size=(25, 1)), sg.Button('Копировать', key='-COPY_PATH-', size=(8, 1))],
+                [sg.Text('Имя файла:', size=(15, 1)), sg.Text('', key='-FILE_NAME-', size=(25, 1)), sg.Button('Копировать', key='-COPY_NAME-', size=(8, 1))],
             ], font=('Arial', 10), pad=(5, 5))],
             [sg.Frame('EXIF данные', [
                 [sg.Multiline('', key='-EXIF_INFO-', size=(40, 6), disabled=True, font=('Courier', 9), background_color='#f0f0f0')]
@@ -228,6 +228,48 @@ class ImageProcessorGUI:
         self._window['-FILE_NAME-'].update('')
         
         self._window['-EXIF_INFO-'].update('')
+    
+    def copy_to_clipboard(self, text: str) -> None:
+        """Копирует текст в буфер обмена"""
+        try:
+            import tkinter as tk
+            root = tk.Tk()
+            root.withdraw()  # Скрываем главное окно
+            root.clipboard_clear()
+            root.clipboard_append(text)
+            root.update()  # Обновляем буфер обмена
+            root.destroy()
+            self.update_status('Текст скопирован в буфер обмена')
+        except Exception as e:
+            self.update_status(f'Ошибка копирования: {str(e)}')
+    
+    def copy_file_path(self) -> None:
+        """Копирует путь к файлу в буфер обмена"""
+        if not self._window:
+            return
+        
+        file_path = self._window['-FILE_PATH-'].get()
+        if file_path:
+            # Получаем полный путь из информации об изображении
+            info = self._image_service.get_image_info()
+            full_path = info.get('Путь к файлу', '')
+            if full_path:
+                self.copy_to_clipboard(full_path)
+            else:
+                self.copy_to_clipboard(file_path)
+        else:
+            self.update_status('Нет пути к файлу для копирования')
+    
+    def copy_file_name(self) -> None:
+        """Копирует имя файла в буфер обмена"""
+        if not self._window:
+            return
+        
+        file_name = self._window['-FILE_NAME-'].get()
+        if file_name:
+            self.copy_to_clipboard(file_name)
+        else:
+            self.update_status('Нет имени файла для копирования')
     
     def enable_image_controls(self, enabled: bool) -> None:
         """Включает/выключает элементы управления изображением"""
@@ -494,6 +536,12 @@ class ImageProcessorGUI:
             
             elif event == '-HIST_COMPARE-':
                 self.show_histogram('compare')
+            
+            elif event == '-COPY_PATH-':
+                self.copy_file_path()
+            
+            elif event == '-COPY_NAME-':
+                self.copy_file_name()
                 
         except Exception as e:
             self.update_status(f'Ошибка: {str(e)}')
