@@ -348,8 +348,8 @@ class ImageProcessorGUI:
                 self.update_status('Не удалось получить гистограммы для сравнения')
                 return
             
-            current_bytes = self._image_service.plot_histogram(current_hist, '(Текущее)')
-            original_bytes = self._image_service.plot_histogram(original_hist, '(Оригинальное)')
+            current_bytes = self._image_service.plot_histogram(current_hist, '(Текущее)', 4, 3)
+            original_bytes = self._image_service.plot_histogram(original_hist, '(Оригинальное)', 4, 3)
             
             if current_bytes and original_bytes:
                 self.create_comparison_window(original_bytes, current_bytes)
@@ -378,18 +378,21 @@ class ImageProcessorGUI:
         )
     
     def create_comparison_window(self, original_bytes: bytes, current_bytes: bytes) -> None:
-        """Создает окно сравнения гистограмм"""
+        """Создает окно сравнения гистограмм с горизонтальным расположением"""
         layout = [
-            [sg.Text('Оригинальная гистограмма:', font=('Arial', 12, 'bold'))],
-            [sg.Image(data=original_bytes)],
-            [sg.Text('Текущая гистограмма:', font=('Arial', 12, 'bold'))],
-            [sg.Image(data=current_bytes)],
+            [
+                sg.Column([[sg.Text('Оригинальная гистограмма:', font=('Arial', 12, 'bold'))],
+                        [sg.Image(data=original_bytes)]], vertical_alignment='top'),
+                sg.VerticalSeparator(),
+                sg.Column([[sg.Text('Текущая гистограмма:', font=('Arial', 12, 'bold'))],
+                        [sg.Image(data=current_bytes)]], vertical_alignment='top')
+            ],
             [sg.Button('Закрыть', key='-CLOSE_COMP-')]
         ]
-        
+
         if self._current_histogram_window:
             self._current_histogram_window.close()
-        
+
         self._current_histogram_window = sg.Window(
             'Сравнение гистограмм',
             layout,

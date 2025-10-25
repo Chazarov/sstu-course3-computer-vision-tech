@@ -172,10 +172,10 @@ class ImageService:
         except Exception:
             return None
     
-    def plot_histogram(self, histogram: Histogram, title: str = "") -> Optional[bytes]:
+    def plot_histogram(self, histogram: Histogram, title: str = "", width: float = 10, height: float = 6) -> Optional[bytes]:
         """Строит график гистограммы"""
         try:
-            return self._histogram_service.plot_histogram(histogram, title)
+            return self._histogram_service.plot_histogram(histogram, title, width, height)
         except Exception:
             return None
     

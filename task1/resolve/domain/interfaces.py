@@ -90,7 +90,7 @@ class IHistogramService(ABC):
         pass
     
     @abstractmethod
-    def plot_histogram(self, histogram: Histogram, title: str = "") -> bytes:
+    def plot_histogram(self, histogram: Histogram, title: str = "",  width: float = 10, height: float = 6) -> bytes:
         """Строит график гистограммы и возвращает его как байты"""
         pass
 

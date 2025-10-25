@@ -46,13 +46,12 @@ class MatplotlibHistogramService(IHistogramService):
             print(f"Ошибка вычисления гистограммы: {e}")
             raise
     
-    def plot_histogram(self, histogram: Histogram, title: str = "") -> bytes:
+    def plot_histogram(self, histogram: Histogram, title: str = "", width: float = 10, height: float = 6) -> bytes:
         """Строит график гистограммы и возвращает его как байты"""
         try:
-            plt.figure(figsize=(10, 6))
+            plt.figure(figsize=(width, height))
             
             if histogram.grayscale is not None:
-                # Grayscale histogram
                 plt.plot(range(256), histogram.grayscale, color='black', alpha=0.7)
                 plt.fill_between(range(256), histogram.grayscale, alpha=0.3, color='gray')
                 plt.title(f'Гистограмма (Градации серого) {title}')
@@ -60,15 +59,12 @@ class MatplotlibHistogramService(IHistogramService):
                 plt.ylabel('Количество пикселей')
                 
             elif histogram.has_color_channels():
-                # RGB histogram
                 plt.plot(range(256), histogram.red_channel, color='red', alpha=0.7, label='Красный')
                 plt.plot(range(256), histogram.green_channel, color='green', alpha=0.7, label='Зеленый')
                 plt.plot(range(256), histogram.blue_channel, color='blue', alpha=0.7, label='Синий')
-                
                 plt.fill_between(range(256), histogram.red_channel, alpha=0.3, color='red')
                 plt.fill_between(range(256), histogram.green_channel, alpha=0.3, color='green')
                 plt.fill_between(range(256), histogram.blue_channel, alpha=0.3, color='blue')
-                
                 plt.title(f'Гистограмма RGB {title}')
                 plt.xlabel('Значение яркости')
                 plt.ylabel('Количество пикселей')
@@ -77,7 +73,6 @@ class MatplotlibHistogramService(IHistogramService):
             plt.grid(True, alpha=0.3)
             plt.tight_layout()
             
-            # Сохраняем в bytes
             buffer = io.BytesIO()
             plt.savefig(buffer, format='png', dpi=100, bbox_inches='tight')
             buffer.seek(0)
