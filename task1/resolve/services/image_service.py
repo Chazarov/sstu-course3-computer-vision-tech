@@ -28,6 +28,9 @@ class ImageService:
         self._display_service = display_service
         self._current_image: Optional[Image] = None
         self._is_gray = False
+        
+        # Текущие параметры обработки для расчета дельты
+        self._current_processing_params = ImageProcessingParameters()
     
     @property
     def current_image(self) -> Optional[Image]:
@@ -40,6 +43,9 @@ class ImageService:
             image = self._image_repository.load_image(file_path)
             if image:
                 self._current_image = image
+                # Сбрасываем параметры обработки при загрузке нового изображения
+                self._current_processing_params = ImageProcessingParameters()
+                self._is_gray = False
                 return True
             return False
         except Exception:
@@ -76,36 +82,49 @@ class ImageService:
             return False
         
         try:
-            # Начинаем с оригинальных данных для корректной работы слайдеров
-            processed_data = self._current_image.original_data.copy()
+            # Начинаем с текущих данных изображения (не с оригинальных!)
+            processed_data = self._current_image.current_data.copy()
             
-            # Применяем яркость
-            if params.brightness != 0:
+            # Рассчитываем дельту для яркости
+            brightness_delta = params.brightness - self._current_processing_params.brightness
+            if brightness_delta != 0:
                 processed_data = self._image_processor.adjust_brightness(
-                    processed_data, params.brightness
+                    processed_data, brightness_delta
                 )
             
-            # Применяем контрастность
-            if params.contrast != 1.0:
+            # Рассчитываем дельту для контрастности
+            contrast_ratio = params.contrast / self._current_processing_params.contrast if self._current_processing_params.contrast != 0 else params.contrast
+            if contrast_ratio != 1.0:
                 processed_data = self._image_processor.adjust_contrast(
-                    processed_data, params.contrast
+                    processed_data, contrast_ratio
                 )
             
-            # Применяем насыщенность (только для цветных изображений)
-            if params.saturation != 1.0 and not self._current_image.is_grayscale():
-                processed_data = self._image_processor.adjust_saturation(
-                    processed_data, params.saturation
-                )
+            # Рассчитываем дельту для насыщенности (только для цветных изображений)
+            if not self._current_image.is_grayscale():
+                saturation_ratio = params.saturation / self._current_processing_params.saturation if self._current_processing_params.saturation != 0 else params.saturation
+                if saturation_ratio != 1.0:
+                    processed_data = self._image_processor.adjust_saturation(
+                        processed_data, saturation_ratio
+                    )
             
-            # Применяем поворот
-            if params.rotation != 0:
+            # Для поворота применяем полный поворот, так как это дискретная операция
+            rotation_delta = params.rotation - self._current_processing_params.rotation
+            if rotation_delta != 0:
                 processed_data = self._image_processor.rotate_image(
-                    processed_data, params.rotation
+                    processed_data, rotation_delta
                 )
             
             # Если изображение было в градациях серого, принудительно конвертируем результат
             if self._is_gray:
                 processed_data = self._image_processor.convert_to_grayscale(processed_data)
+            
+            # Обновляем текущие параметры обработки
+            self._current_processing_params = ImageProcessingParameters(
+                brightness=params.brightness,
+                contrast=params.contrast,
+                saturation=params.saturation,
+                rotation=params.rotation
+            )
             
             self._current_image.update_data(processed_data)
             return True
@@ -205,6 +224,24 @@ class ImageService:
         try:
             self._current_image.reset_to_original()
             self._is_gray = False
+            # Сбрасываем параметры обработки
+            self._current_processing_params = ImageProcessingParameters()
+            return True
+        except Exception:
+            return False
+    
+    def get_current_processing_params(self) -> ImageProcessingParameters:
+        """Получает текущие параметры обработки"""
+        return self._current_processing_params
+    
+    def reset_processing_params(self) -> bool:
+        """Сбрасывает параметры обработки к значениям по умолчанию"""
+        if not self._current_image:
+            return False
+        
+        try:
+            # Сбрасываем параметры обработки
+            self._current_processing_params = ImageProcessingParameters()
             return True
         except Exception:
             return False

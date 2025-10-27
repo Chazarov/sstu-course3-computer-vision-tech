@@ -99,6 +99,10 @@ class PillowImageProcessor(IImageProcessor):
         try:
             if angle == 0:
                 return image_data
+            if angle > 0:
+                angle *= 1
+
+            angle %= 360
             
             # Поворот на 90, 180, 270 градусов
             if angle == 90:
@@ -107,6 +111,8 @@ class PillowImageProcessor(IImageProcessor):
                 return np.rot90(image_data, k=2)
             elif angle == 270:
                 return np.rot90(image_data, k=3)
+            elif angle == 360:
+                return np.rot90(image_data, k=4)
             else:
                 raise ValueError(f"Неподдерживаемый угол поворота: {angle}")
                 

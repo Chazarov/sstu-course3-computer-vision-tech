@@ -332,6 +332,10 @@ class ImageProcessorGUI:
         if not self._window:
             return
         
+        # Сбрасываем параметры в сервисе
+        self._image_service.reset_processing_params()
+        
+        # Обновляем UI элементы
         self._window['-BRIGHTNESS-'].update(0)
         self._window['-CONTRAST-'].update(1.0)
         self._window['-SATURATION-'].update(1.0)
@@ -339,6 +343,9 @@ class ImageProcessorGUI:
         self._window['-LOG_FACTOR-'].update(1.0)
         self._window['-GAMMA_FACTOR-'].update(1.0)
         self._processing_params = ImageProcessingParameters()
+        
+        # Обновляем отображение изображения
+        self.update_image_display()
     
     def apply_processing_params(self) -> None:
         """Применяет текущие параметры обработки"""
