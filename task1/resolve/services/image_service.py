@@ -27,6 +27,7 @@ class ImageService:
         self._histogram_service = histogram_service
         self._display_service = display_service
         self._current_image: Optional[Image] = None
+        self._is_gray = False
     
     @property
     def current_image(self) -> Optional[Image]:
@@ -64,6 +65,7 @@ class ImageService:
                 self._current_image.current_data
             )
             self._current_image.update_data(grayscale_data)
+            self._is_gray = True
             return True
         except Exception:
             return False
@@ -74,8 +76,8 @@ class ImageService:
             return False
         
         try:
-            # Начинаем с оригинальных данных
-            processed_data = self._current_image.original_data
+            # Начинаем с оригинальных данных для корректной работы слайдеров
+            processed_data = self._current_image.original_data.copy()
             
             # Применяем яркость
             if params.brightness != 0:
@@ -100,6 +102,10 @@ class ImageService:
                 processed_data = self._image_processor.rotate_image(
                     processed_data, params.rotation
                 )
+            
+            # Если изображение было в градациях серого, принудительно конвертируем результат
+            if self._is_gray:
+                processed_data = self._image_processor.convert_to_grayscale(processed_data)
             
             self._current_image.update_data(processed_data)
             return True
@@ -198,6 +204,7 @@ class ImageService:
         
         try:
             self._current_image.reset_to_original()
+            self._is_gray = False
             return True
         except Exception:
             return False
