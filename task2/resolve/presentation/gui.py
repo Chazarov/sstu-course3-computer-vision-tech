@@ -22,6 +22,7 @@ class ImageViewer:
         self.root.title("Морфологические операции")
         
         self.current_image = None
+        self.original_image = None
         self.repository = OpenCVImageRepository()
         self.load_use_case = LoadImageUseCase(self.repository)
         self.save_use_case = SaveImageUseCase(self.repository)
@@ -52,6 +53,12 @@ class ImageViewer:
         
         ttk.Button(control_frame, text="Загрузить", command=self.load_image).grid(row=0, column=0, padx=5)
         ttk.Button(control_frame, text="Сохранить", command=self.save_image).grid(row=0, column=1, padx=5)
+        
+        self.show_original_btn = ttk.Button(control_frame, text="Посмотреть оригинал")
+        self.show_original_btn.grid(row=0, column=2, padx=5)
+        self.show_original_btn.bind("<Button-1>", self.on_show_original_press)
+        self.show_original_btn.bind("<ButtonRelease-1>", self.on_show_original_release)
+        self.show_original_btn.state(['disabled'])
         
         image_frame = ttk.Frame(main_frame)
         image_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
@@ -134,8 +141,11 @@ class ImageViewer:
         )
         if path:
             try:
-                self.current_image = self.load_use_case.execute(path)
+                loaded_image = self.load_use_case.execute(path)
+                self.original_image = DomainImage(np.copy(loaded_image.data))
+                self.current_image = loaded_image
                 self.display_image(self.current_image)
+                self.show_original_btn.state(['!disabled'])
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось загрузить изображение: {str(e)}")
     
@@ -207,6 +217,14 @@ class ImageViewer:
             self.display_image(self.current_image)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось применить операцию: {str(e)}")
+    
+    def on_show_original_press(self, event):
+        if self.original_image is not None:
+            self.display_image(self.original_image)
+    
+    def on_show_original_release(self, event):
+        if self.current_image is not None:
+            self.display_image(self.current_image)
 
 
 def main():
