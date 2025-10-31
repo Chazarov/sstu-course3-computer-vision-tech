@@ -23,41 +23,6 @@ from infrastructure.image_filters import (
 )
 
 
-class ResultWindow:
-    def __init__(self, parent, title, image: DomainImage):
-        self.window = tk.Toplevel(parent)
-        self.window.title(title)
-        
-        canvas_frame = ttk.Frame(self.window, padding="10")
-        canvas_frame.pack(fill=tk.BOTH, expand=True)
-        
-        self.canvas = tk.Canvas(canvas_frame, bg="white")
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        
-        scrollbar_v = ttk.Scrollbar(canvas_frame, orient=tk.VERTICAL, command=self.canvas.yview)
-        scrollbar_v.pack(side=tk.RIGHT, fill=tk.Y)
-        scrollbar_h = ttk.Scrollbar(self.window, orient=tk.HORIZONTAL, command=self.canvas.xview)
-        scrollbar_h.pack(side=tk.BOTTOM, fill=tk.X)
-        
-        self.canvas.configure(yscrollcommand=scrollbar_v.set, xscrollcommand=scrollbar_h.set)
-        
-        self.display_image(image)
-    
-    def display_image(self, image: DomainImage):
-        self.canvas.delete("all")
-        pil_image = Image.fromarray(image.data)
-        max_width = 800
-        max_height = 600
-        width, height = pil_image.size
-        scale = min(max_width / width, max_height / height, 1.0)
-        new_width = int(width * scale)
-        new_height = int(height * scale)
-        pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        self.photo = ImageTk.PhotoImage(pil_image)
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-
-
 class ImageViewer:
     def __init__(self, root):
         self.root = root
@@ -65,6 +30,7 @@ class ImageViewer:
         
         self.current_image = None
         self.original_image = None
+        self.image_history = []
         self.repository = OpenCVImageRepository()
         self.load_use_case = LoadImageUseCase(self.repository)
         self.save_use_case = SaveImageUseCase(self.repository)
@@ -97,8 +63,12 @@ class ImageViewer:
         ttk.Button(control_frame, text="📂 Загрузить", command=self.load_image).grid(row=0, column=0, padx=5)
         ttk.Button(control_frame, text="💾 Сохранить", command=self.save_image).grid(row=0, column=1, padx=5)
         
+        self.undo_btn = ttk.Button(control_frame, text="↶ Отменить", command=self.undo_last_action)
+        self.undo_btn.grid(row=0, column=2, padx=5)
+        self.undo_btn.state(['disabled'])
+        
         self.show_original_btn = ttk.Button(control_frame, text="👁️ Посмотреть оригинал")
-        self.show_original_btn.grid(row=0, column=2, padx=5)
+        self.show_original_btn.grid(row=0, column=3, padx=5)
         self.show_original_btn.bind("<Button-1>", self.on_show_original_press)
         self.show_original_btn.bind("<ButtonRelease-1>", self.on_show_original_release)
         self.show_original_btn.state(['disabled'])
@@ -171,10 +141,7 @@ class ImageViewer:
         self.kernel_entries_frame = ttk.Frame(kernel_frame)
         self.kernel_entries_frame.grid(row=1, column=0, columnspan=2, pady=10)
         
-        morph_btn_frame = ttk.Frame(kernel_frame)
-        morph_btn_frame.grid(row=2, column=0, columnspan=2, pady=10)
-        ttk.Button(morph_btn_frame, text="✅ Применить", command=self.apply_operation).grid(row=0, column=0, padx=5)
-        ttk.Button(morph_btn_frame, text="👁️ Показать результат", command=self.show_morphology_result).grid(row=0, column=1, padx=5)
+        ttk.Button(kernel_frame, text="✅ Применить", command=self.apply_operation).grid(row=2, column=0, columnspan=2, pady=10)
         
         self.create_kernel_matrix()
         
@@ -185,25 +152,10 @@ class ImageViewer:
         filters_grid = ttk.Frame(filters_frame)
         filters_grid.pack(fill=tk.X, pady=5)
         
-        btn_frame1 = ttk.Frame(filters_grid)
-        btn_frame1.pack(fill=tk.X, pady=2)
-        ttk.Button(btn_frame1, text="🔍 Резкость", command=self.apply_sharpening, width=20).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame1, text="👁️", command=self.show_sharpening_result, width=3).pack(side=tk.LEFT, padx=2)
-        
-        btn_frame2 = ttk.Frame(filters_grid)
-        btn_frame2.pack(fill=tk.X, pady=2)
-        ttk.Button(btn_frame2, text="💨 Размытие", command=self.apply_motion_blur, width=20).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame2, text="👁️", command=self.show_motion_blur_result, width=3).pack(side=tk.LEFT, padx=2)
-        
-        btn_frame3 = ttk.Frame(filters_grid)
-        btn_frame3.pack(fill=tk.X, pady=2)
-        ttk.Button(btn_frame3, text="🖼️ Тиснение", command=self.apply_emboss, width=20).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame3, text="👁️", command=self.show_emboss_result, width=3).pack(side=tk.LEFT, padx=2)
-        
-        btn_frame4 = ttk.Frame(filters_grid)
-        btn_frame4.pack(fill=tk.X, pady=2)
-        ttk.Button(btn_frame4, text="📊 Медиана", command=self.apply_median_filter, width=20).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame4, text="👁️", command=self.show_median_filter_result, width=3).pack(side=tk.LEFT, padx=2)
+        ttk.Button(filters_grid, text="🔍 Резкость", command=self.apply_sharpening, width=25).pack(fill=tk.X, pady=2)
+        ttk.Button(filters_grid, text="💨 Размытие", command=self.apply_motion_blur, width=25).pack(fill=tk.X, pady=2)
+        ttk.Button(filters_grid, text="🖼️ Тиснение", command=self.apply_emboss, width=25).pack(fill=tk.X, pady=2)
+        ttk.Button(filters_grid, text="📊 Медиана", command=self.apply_median_filter, width=25).pack(fill=tk.X, pady=2)
         
         custom_frame = ttk.LabelFrame(filters_frame, text="🎯 Пользовательский фильтр", padding="10")
         custom_frame.pack(fill=tk.X, pady=(10, 0))
@@ -222,10 +174,7 @@ class ImageViewer:
         self.custom_kernel_entries_frame = ttk.Frame(custom_frame)
         self.custom_kernel_entries_frame.pack(pady=10)
         
-        custom_btn_frame = ttk.Frame(custom_frame)
-        custom_btn_frame.pack(pady=10)
-        ttk.Button(custom_btn_frame, text="✅ Применить", command=self.apply_custom_filter).pack(side=tk.LEFT, padx=5)
-        ttk.Button(custom_btn_frame, text="👁️ Показать результат", command=self.show_custom_filter_result).pack(side=tk.LEFT, padx=5)
+        ttk.Button(custom_frame, text="✅ Применить", command=self.apply_custom_filter).pack(pady=10)
         
         self.create_custom_kernel_matrix()
     
@@ -286,10 +235,26 @@ class ImageViewer:
                 loaded_image = self.load_use_case.execute(path)
                 self.original_image = DomainImage(np.copy(loaded_image.data))
                 self.current_image = loaded_image
+                self.image_history = []
                 self.display_image(self.current_image)
                 self.show_original_btn.state(['!disabled'])
+                self.undo_btn.state(['disabled'])
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось загрузить изображение: {str(e)}")
+    
+    def save_state_before_operation(self):
+        if self.current_image is not None:
+            self.image_history.append(DomainImage(np.copy(self.current_image.data)))
+            if len(self.image_history) > 20:
+                self.image_history.pop(0)
+            self.undo_btn.state(['!disabled'])
+    
+    def undo_last_action(self):
+        if self.image_history:
+            self.current_image = self.image_history.pop()
+            self.display_image(self.current_image)
+            if not self.image_history:
+                self.undo_btn.state(['disabled'])
     
     def save_image(self):
         if self.current_image is None:
@@ -348,6 +313,7 @@ class ImageViewer:
             return
         
         try:
+            self.save_state_before_operation()
             kernel = self.get_kernel_from_entries()
             structural_element = StructuralElement(kernel)
             
@@ -359,22 +325,10 @@ class ImageViewer:
             self.display_image(self.current_image)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось применить операцию: {str(e)}")
-    
-    def show_morphology_result(self):
-        if self.current_image is None:
-            messagebox.showwarning("Предупреждение", "Загрузите изображение")
-            return
-        
-        try:
-            kernel = self.get_kernel_from_entries()
-            structural_element = StructuralElement(kernel)
-            operation_name = self.operation_var.get()
-            operation = self.operations_map[operation_name]
-            use_case = ApplyMorphologicalOperationUseCase(operation)
-            result = use_case.execute(self.current_image, structural_element)
-            ResultWindow(self.root, f"🔬 Результат: {operation_name}", result)
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось применить операцию: {str(e)}")
+            if self.image_history:
+                self.image_history.pop()
+                if not self.image_history:
+                    self.undo_btn.state(['disabled'])
     
     def apply_sharpening(self):
         if self.current_image is None:
@@ -382,25 +336,17 @@ class ImageViewer:
             return
         
         try:
+            self.save_state_before_operation()
             filter = SharpeningFilter()
             use_case = ApplyImageFilterUseCase(filter)
             self.current_image = use_case.execute(self.current_image)
             self.display_image(self.current_image)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
-    
-    def show_sharpening_result(self):
-        if self.current_image is None:
-            messagebox.showwarning("Предупреждение", "Загрузите изображение")
-            return
-        
-        try:
-            filter = SharpeningFilter()
-            use_case = ApplyImageFilterUseCase(filter)
-            result = use_case.execute(self.current_image)
-            ResultWindow(self.root, "🔍 Результат: Повышение резкости", result)
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
+            if self.image_history:
+                self.image_history.pop()
+                if not self.image_history:
+                    self.undo_btn.state(['disabled'])
     
     def apply_motion_blur(self):
         if self.current_image is None:
@@ -422,6 +368,7 @@ class ImageViewer:
         
         def apply():
             try:
+                self.save_state_before_operation()
                 size = int(size_var.get())
                 if size % 2 == 0:
                     size += 1
@@ -433,42 +380,12 @@ class ImageViewer:
                 dialog.destroy()
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
+                if self.image_history:
+                    self.image_history.pop()
+                    if not self.image_history:
+                        self.undo_btn.state(['disabled'])
         
         ttk.Button(dialog, text="Применить", command=apply).grid(row=2, column=0, columnspan=2, pady=10)
-    
-    def show_motion_blur_result(self):
-        if self.current_image is None:
-            messagebox.showwarning("Предупреждение", "Загрузите изображение")
-            return
-        
-        dialog = tk.Toplevel(self.root)
-        dialog.title("💨 Настройки размытия в движении")
-        dialog.transient(self.root)
-        dialog.grab_set()
-        
-        ttk.Label(dialog, text="Размер ядра:").grid(row=0, column=0, padx=5, pady=5)
-        size_var = tk.StringVar(value="15")
-        ttk.Spinbox(dialog, from_=3, to=50, textvariable=size_var, width=10).grid(row=0, column=1, padx=5, pady=5)
-        
-        ttk.Label(dialog, text="Угол (градусы):").grid(row=1, column=0, padx=5, pady=5)
-        angle_var = tk.StringVar(value="45")
-        ttk.Spinbox(dialog, from_=0, to=180, textvariable=angle_var, width=10).grid(row=1, column=1, padx=5, pady=5)
-        
-        def show():
-            try:
-                size = int(size_var.get())
-                if size % 2 == 0:
-                    size += 1
-                angle = int(angle_var.get())
-                filter = MotionBlurFilter(size, angle)
-                use_case = ApplyImageFilterUseCase(filter)
-                result = use_case.execute(self.current_image)
-                ResultWindow(self.root, "💨 Результат: Размытие в движении", result)
-                dialog.destroy()
-            except Exception as e:
-                messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
-        
-        ttk.Button(dialog, text="Показать результат", command=show).grid(row=2, column=0, columnspan=2, pady=10)
     
     def apply_emboss(self):
         if self.current_image is None:
@@ -476,25 +393,17 @@ class ImageViewer:
             return
         
         try:
+            self.save_state_before_operation()
             filter = EmbossFilter()
             use_case = ApplyImageFilterUseCase(filter)
             self.current_image = use_case.execute(self.current_image)
             self.display_image(self.current_image)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
-    
-    def show_emboss_result(self):
-        if self.current_image is None:
-            messagebox.showwarning("Предупреждение", "Загрузите изображение")
-            return
-        
-        try:
-            filter = EmbossFilter()
-            use_case = ApplyImageFilterUseCase(filter)
-            result = use_case.execute(self.current_image)
-            ResultWindow(self.root, "🖼️ Результат: Тиснение", result)
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
+            if self.image_history:
+                self.image_history.pop()
+                if not self.image_history:
+                    self.undo_btn.state(['disabled'])
     
     def apply_median_filter(self):
         if self.current_image is None:
@@ -512,6 +421,7 @@ class ImageViewer:
         
         def apply():
             try:
+                self.save_state_before_operation()
                 size = int(size_var.get())
                 if size % 2 == 0:
                     size += 1
@@ -522,37 +432,12 @@ class ImageViewer:
                 dialog.destroy()
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
+                if self.image_history:
+                    self.image_history.pop()
+                    if not self.image_history:
+                        self.undo_btn.state(['disabled'])
         
         ttk.Button(dialog, text="Применить", command=apply).grid(row=1, column=0, columnspan=2, pady=10)
-    
-    def show_median_filter_result(self):
-        if self.current_image is None:
-            messagebox.showwarning("Предупреждение", "Загрузите изображение")
-            return
-        
-        dialog = tk.Toplevel(self.root)
-        dialog.title("📊 Настройки медианной фильтрации")
-        dialog.transient(self.root)
-        dialog.grab_set()
-        
-        ttk.Label(dialog, text="Размер ядра (нечетное):").grid(row=0, column=0, padx=5, pady=5)
-        size_var = tk.StringVar(value="5")
-        ttk.Spinbox(dialog, from_=3, to=21, textvariable=size_var, width=10).grid(row=0, column=1, padx=5, pady=5)
-        
-        def show():
-            try:
-                size = int(size_var.get())
-                if size % 2 == 0:
-                    size += 1
-                filter = MedianFilter(size)
-                use_case = ApplyImageFilterUseCase(filter)
-                result = use_case.execute(self.current_image)
-                ResultWindow(self.root, "📊 Результат: Медианная фильтрация", result)
-                dialog.destroy()
-            except Exception as e:
-                messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
-        
-        ttk.Button(dialog, text="Показать результат", command=show).grid(row=1, column=0, columnspan=2, pady=10)
     
     def get_custom_kernel_from_entries(self):
         try:
@@ -573,6 +458,7 @@ class ImageViewer:
             return
         
         try:
+            self.save_state_before_operation()
             kernel = self.get_custom_kernel_from_entries()
             custom_filter = CustomFilter(kernel)
             filter_impl = CustomFilterImplementation(custom_filter)
@@ -581,21 +467,10 @@ class ImageViewer:
             self.display_image(self.current_image)
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
-    
-    def show_custom_filter_result(self):
-        if self.current_image is None:
-            messagebox.showwarning("Предупреждение", "Загрузите изображение")
-            return
-        
-        try:
-            kernel = self.get_custom_kernel_from_entries()
-            custom_filter = CustomFilter(kernel)
-            filter_impl = CustomFilterImplementation(custom_filter)
-            use_case = ApplyImageFilterUseCase(filter_impl)
-            result = use_case.execute(self.current_image)
-            ResultWindow(self.root, "🎯 Результат: Пользовательский фильтр", result)
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось применить фильтр: {str(e)}")
+            if self.image_history:
+                self.image_history.pop()
+                if not self.image_history:
+                    self.undo_btn.state(['disabled'])
     
     def on_show_original_press(self, event):
         if self.original_image is not None:
