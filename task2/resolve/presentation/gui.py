@@ -87,6 +87,7 @@ class ImageViewer:
         
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(0, weight=2)
         main_frame.columnconfigure(1, weight=1)
         main_frame.rowconfigure(1, weight=1)
         
@@ -103,7 +104,7 @@ class ImageViewer:
         self.show_original_btn.state(['disabled'])
         
         image_frame = ttk.Frame(main_frame)
-        image_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
+        image_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(0, 10))
         image_frame.columnconfigure(0, weight=1)
         image_frame.rowconfigure(0, weight=1)
         
@@ -122,13 +123,34 @@ class ImageViewer:
         
         self.canvas.configure(yscrollcommand=scrollbar_v.set, xscrollcommand=scrollbar_h.set)
         
-        morph_frame = ttk.LabelFrame(main_frame, text="🔬 Морфологические операции", padding="10")
-        morph_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
+        controls_panel = ttk.Frame(main_frame)
+        controls_panel.grid(row=1, column=1, sticky=(tk.W, tk.E, tk.N, tk.S))
+        controls_panel.columnconfigure(0, weight=1)
+        
+        scrollable_panel = tk.Canvas(controls_panel)
+        scrollable_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        controls_scrollbar = ttk.Scrollbar(controls_panel, orient=tk.VERTICAL, command=scrollable_panel.yview)
+        controls_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollable_panel.configure(yscrollcommand=controls_scrollbar.set)
+        
+        controls_content = ttk.Frame(scrollable_panel)
+        scrollable_panel.create_window((0, 0), window=controls_content, anchor=tk.NW)
+        
+        def update_scroll_region(event):
+            scrollable_panel.configure(scrollregion=scrollable_panel.bbox("all"))
+        
+        controls_content.bind("<Configure>", update_scroll_region)
+        scrollable_panel.bind("<Configure>", lambda e: scrollable_panel.itemconfig(scrollable_panel.find_all()[0], width=e.width))
+        
+        morph_frame = ttk.LabelFrame(controls_content, text="🔬 Морфологические операции", padding="10")
+        morph_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        morph_frame.columnconfigure(0, weight=1)
         
         ttk.Label(morph_frame, text="Операция:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
         self.operation_var = tk.StringVar(value="Эрозия")
         operation_combo = ttk.Combobox(morph_frame, textvariable=self.operation_var, 
-                                      values=list(self.operations_map.keys()), state="readonly", width=18)
+                                      values=list(self.operations_map.keys()), state="readonly", width=15)
         operation_combo.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
         
         kernel_frame = ttk.LabelFrame(morph_frame, text="⚙️ Структурный элемент", padding="10")
@@ -156,30 +178,31 @@ class ImageViewer:
         
         self.create_kernel_matrix()
         
-        filters_frame = ttk.LabelFrame(main_frame, text="✨ Фильтры изображений", padding="10")
-        filters_frame.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
+        filters_frame = ttk.LabelFrame(controls_content, text="✨ Фильтры изображений", padding="10")
+        filters_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 0))
+        filters_frame.columnconfigure(0, weight=1)
         
         filters_grid = ttk.Frame(filters_frame)
         filters_grid.pack(fill=tk.X, pady=5)
         
         btn_frame1 = ttk.Frame(filters_grid)
-        btn_frame1.grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
-        ttk.Button(btn_frame1, text="🔍 Резкость", command=self.apply_sharpening, width=15).pack(side=tk.LEFT, padx=2)
+        btn_frame1.pack(fill=tk.X, pady=2)
+        ttk.Button(btn_frame1, text="🔍 Резкость", command=self.apply_sharpening, width=20).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame1, text="👁️", command=self.show_sharpening_result, width=3).pack(side=tk.LEFT, padx=2)
         
         btn_frame2 = ttk.Frame(filters_grid)
-        btn_frame2.grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
-        ttk.Button(btn_frame2, text="💨 Размытие", command=self.apply_motion_blur, width=15).pack(side=tk.LEFT, padx=2)
+        btn_frame2.pack(fill=tk.X, pady=2)
+        ttk.Button(btn_frame2, text="💨 Размытие", command=self.apply_motion_blur, width=20).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame2, text="👁️", command=self.show_motion_blur_result, width=3).pack(side=tk.LEFT, padx=2)
         
         btn_frame3 = ttk.Frame(filters_grid)
-        btn_frame3.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-        ttk.Button(btn_frame3, text="🖼️ Тиснение", command=self.apply_emboss, width=15).pack(side=tk.LEFT, padx=2)
+        btn_frame3.pack(fill=tk.X, pady=2)
+        ttk.Button(btn_frame3, text="🖼️ Тиснение", command=self.apply_emboss, width=20).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame3, text="👁️", command=self.show_emboss_result, width=3).pack(side=tk.LEFT, padx=2)
         
         btn_frame4 = ttk.Frame(filters_grid)
-        btn_frame4.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
-        ttk.Button(btn_frame4, text="📊 Медиана", command=self.apply_median_filter, width=15).pack(side=tk.LEFT, padx=2)
+        btn_frame4.pack(fill=tk.X, pady=2)
+        ttk.Button(btn_frame4, text="📊 Медиана", command=self.apply_median_filter, width=20).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_frame4, text="👁️", command=self.show_median_filter_result, width=3).pack(side=tk.LEFT, padx=2)
         
         custom_frame = ttk.LabelFrame(filters_frame, text="🎯 Пользовательский фильтр", padding="10")
