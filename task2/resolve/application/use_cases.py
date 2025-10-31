@@ -1,4 +1,4 @@
-from domain.entities import Image, StructuralElement, MorphologicalOperation
+from domain.entities import Image, StructuralElement, MorphologicalOperation, ImageFilter
 from domain.repositories import ImageRepository
 
 
@@ -24,4 +24,12 @@ class ApplyMorphologicalOperationUseCase:
     
     def execute(self, image: Image, structural_element: StructuralElement) -> Image:
         return self._operation.apply(image, structural_element)
+
+
+class ApplyImageFilterUseCase:
+    def __init__(self, filter: ImageFilter):
+        self._filter = filter
+    
+    def execute(self, image: Image) -> Image:
+        return self._filter.apply(image)
 

@@ -31,3 +31,13 @@ class MorphologicalOperation(ABC):
     def apply(self, image: Image, structural_element: StructuralElement) -> Image:
         pass
 
+
+class ImageFilter(ABC):
+    @abstractmethod
+    def apply(self, image: Image) -> Image:
+        pass
+
+
+class CustomFilter:
+    def __init__(self, kernel: np.ndarray):
+        self.kernel = kernel
