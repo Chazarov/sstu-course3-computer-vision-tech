@@ -189,8 +189,29 @@ class MainWindow:
             canvas_width = canvas.winfo_width()
             canvas_height = canvas.winfo_height()
         
+        # Устанавливаем минимальные размеры для маленьких изображений
+        min_display_width = min(400, canvas_width * 0.5)
+        min_display_height = min(300, canvas_height * 0.5)
+        
         img_width, img_height = img_pil.size
-        scale = min(canvas_width / img_width, canvas_height / img_height, 1.0)
+        
+        # Вычисляем масштаб для уменьшения (если изображение слишком большое)
+        scale_down = min(canvas_width / img_width, canvas_height / img_height)
+        
+        # Вычисляем масштаб для увеличения (если изображение слишком маленькое)
+        scale_up = max(min_display_width / img_width, min_display_height / img_height)
+        
+        # Выбираем масштаб: если изображение маленькое - увеличиваем, если большое - уменьшаем
+        if scale_up > 1.0:
+            # Изображение слишком маленькое - увеличиваем
+            scale = scale_up
+        elif scale_down < 1.0:
+            # Изображение слишком большое - уменьшаем
+            scale = scale_down
+        else:
+            # Изображение в нормальном диапазоне - оставляем как есть
+            scale = 1.0
+        
         new_width = int(img_width * scale)
         new_height = int(img_height * scale)
         
@@ -201,4 +222,5 @@ class MainWindow:
         x = (canvas_width - new_width) // 2
         y = (canvas_height - new_height) // 2
         canvas.create_image(x, y, anchor=tk.NW, image=img_tk)
+
 

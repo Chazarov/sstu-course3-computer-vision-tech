@@ -279,9 +279,29 @@ class ImageViewer:
         
         max_width = 800
         max_height = 600
+        min_width = 400
+        min_height = 300
         
         width, height = pil_image.size
-        scale = min(max_width / width, max_height / height, 1.0)
+        
+        # Вычисляем масштаб для уменьшения (если изображение слишком большое)
+        scale_down = min(max_width / width, max_height / height)
+        
+        # Вычисляем масштаб для увеличения (если изображение слишком маленькое)
+        scale_up = max(min_width / width, min_height / height)
+        
+        # Выбираем масштаб: если изображение маленькое - увеличиваем, если большое - уменьшаем
+        # Но не уменьшаем больше чем до исходного размера (scale_down <= 1.0)
+        # И не увеличиваем меньше чем до исходного размера (scale_up >= 1.0)
+        if scale_up > 1.0:
+            # Изображение слишком маленькое - увеличиваем
+            scale = scale_up
+        elif scale_down < 1.0:
+            # Изображение слишком большое - уменьшаем
+            scale = scale_down
+        else:
+            # Изображение в нормальном диапазоне - оставляем как есть
+            scale = 1.0
         
         new_width = int(width * scale)
         new_height = int(height * scale)

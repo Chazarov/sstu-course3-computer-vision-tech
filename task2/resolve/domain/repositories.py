@@ -11,3 +11,4 @@ class ImageRepository(ABC):
     def save(self, image: Image, path: str) -> None:
         pass
 
+

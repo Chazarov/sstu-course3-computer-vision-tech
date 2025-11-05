@@ -14,3 +14,4 @@ class OpenCVImageRepository(ImageRepository):
     def save(self, image: Image, path: str) -> None:
         cv2.imwrite(path, image.data)
 
+
