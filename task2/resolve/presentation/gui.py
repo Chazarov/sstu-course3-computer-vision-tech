@@ -194,10 +194,10 @@ class ImageViewer:
             for i in range(rows):
                 row_entries = []
                 for j in range(cols):
-                    entry = ttk.Entry(self.kernel_entries_frame, width=5)
-                    entry.insert(0, "1")
-                    entry.grid(row=i, column=j, padx=2, pady=2)
-                    row_entries.append(entry)
+                    var = tk.BooleanVar(value=True)  # По умолчанию включено (1)
+                    checkbox = ttk.Checkbutton(self.kernel_entries_frame, variable=var)
+                    checkbox.grid(row=i, column=j, padx=2, pady=2)
+                    row_entries.append(var)
                 self.kernel_entries.append(row_entries)
         except ValueError:
             messagebox.showerror("Ошибка", "Некорректное значение размерности")
@@ -320,7 +320,8 @@ class ImageViewer:
             kernel = np.zeros((rows, cols), dtype=np.uint8)
             for i in range(rows):
                 for j in range(cols):
-                    value = int(self.kernel_entries[i][j].get())
+                    # Чекбокс включен = 1, выключен = 0
+                    value = 1 if self.kernel_entries[i][j].get() else 0
                     kernel[i, j] = value
             
             return kernel
