@@ -79,17 +79,20 @@ class ImageProcessorGUI:
             [sg.Text('Параметры обработки:', font=('Arial', 12, 'bold'))],
             [
                 sg.Text('Яркость:', size=(12, 1)),
-                sg.Slider(range=(-100, 100), default_value=0, orientation='h', size=(20, 15), key='-BRIGHTNESS-', enable_events=True)
+                sg.Slider(range=(-100, 100), default_value=0, orientation='h', size=(15, 15), key='-BRIGHTNESS-'),
+                sg.Button('Применить', key='-BRIGHTNESS_APPLY-', size=(8, 1), disabled=True)
             ],
             [
                 sg.Text('Контрастность:', size=(12, 1)),
                 sg.Slider(range=(0.1, 3.0), default_value=1.0, resolution=0.1, orientation='h',
-                         size=(20, 15), key='-CONTRAST-', enable_events=True)
+                         size=(15, 15), key='-CONTRAST-'),
+                sg.Button('Применить', key='-CONTRAST_APPLY-', size=(8, 1), disabled=True)
             ],
             [
                 sg.Text('Насыщенность:', size=(12, 1)),
                 sg.Slider(range=(0.0, 3.0), default_value=1.0, resolution=0.1, orientation='h',
-                         size=(20, 15), key='-SATURATION-', enable_events=True)
+                         size=(15, 15), key='-SATURATION-'),
+                sg.Button('Применить', key='-SATURATION_APPLY-', size=(8, 1), disabled=True)
             ],
             [sg.HorizontalSeparator()],
             [sg.Text('Преобразования:', font=('Arial', 11, 'bold'))],
@@ -279,6 +282,7 @@ class ImageProcessorGUI:
         controls = [
             '-SAVE-', '-RESET-', '-GRAYSCALE-', '-ROTATE-',
             '-HIST_CURRENT-', '-HIST_ORIGINAL-', '-HIST_COMPARE-',
+            '-BRIGHTNESS_APPLY-', '-CONTRAST_APPLY-', '-SATURATION_APPLY-',
             '-LINEAR_CORRECT-', '-LOG_CORRECT-', '-GAMMA_CORRECT-'
         ]
         
@@ -505,9 +509,15 @@ class ImageProcessorGUI:
                 self._processing_params.rotation = (self._processing_params.rotation + 90) % 360
                 self.apply_processing_params()
             
-            elif event in ['-BRIGHTNESS-', '-CONTRAST-', '-SATURATION-']:
+            elif event == '-BRIGHTNESS_APPLY-':
                 self._processing_params.brightness = values['-BRIGHTNESS-']
+                self.apply_processing_params()
+            
+            elif event == '-CONTRAST_APPLY-':
                 self._processing_params.contrast = values['-CONTRAST-']
+                self.apply_processing_params()
+            
+            elif event == '-SATURATION_APPLY-':
                 self._processing_params.saturation = values['-SATURATION-']
                 self.apply_processing_params()
             
