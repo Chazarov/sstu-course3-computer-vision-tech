@@ -31,7 +31,10 @@ class ImageService:
         
         # Текущие параметры обработки для расчета дельты
         self._current_processing_params = ImageProcessingParameters()
-    
+        
+        # Базовое изображение (с фильтрациями, но без параметров яркости/контрастности/насыщенности)
+        self._base_image_data: Optional[np.ndarray] = None
+
     @property
     def current_image(self) -> Optional[Image]:
         """Получает текущее изображение"""
@@ -45,6 +48,8 @@ class ImageService:
                 self._current_image = image
                 # Сбрасываем параметры обработки при загрузке нового изображения
                 self._current_processing_params = ImageProcessingParameters()
+                # Устанавливаем базовое изображение как оригинальное
+                self._base_image_data = image.original_data.copy()
                 self._is_gray = False
                 return True
             return False
@@ -81,31 +86,31 @@ class ImageService:
         if not self._current_image or not params.validate():
             return False
         
+        if self._base_image_data is None:
+            # Если базовое изображение не установлено, используем текущее
+            self._base_image_data = self._current_image.current_data.copy()
+        
         try:
-            # Начинаем с текущих данных изображения (не с оригинальных!)
-            processed_data = self._current_image.current_data.copy()
+            # Начинаем с базового изображения (с фильтрациями, но без параметров яркости/контрастности/насыщенности)
+            processed_data = self._base_image_data.copy()
             
-            # Рассчитываем дельту для яркости
-            brightness_delta = params.brightness - self._current_processing_params.brightness
-            if brightness_delta != 0:
+            # Применяем яркость
+            if params.brightness != 0:
                 processed_data = self._image_processor.adjust_brightness(
-                    processed_data, brightness_delta
+                    processed_data, params.brightness
                 )
             
-            # Рассчитываем дельту для контрастности
-            contrast_ratio = params.contrast / self._current_processing_params.contrast if self._current_processing_params.contrast != 0 else params.contrast
-            if contrast_ratio != 1.0:
+            # Применяем контрастность
+            if params.contrast != 1.0:
                 processed_data = self._image_processor.adjust_contrast(
-                    processed_data, contrast_ratio
+                    processed_data, params.contrast
                 )
             
-            # Рассчитываем дельту для насыщенности (только для цветных изображений)
-            if not self._current_image.is_grayscale():
-                saturation_ratio = params.saturation / self._current_processing_params.saturation if self._current_processing_params.saturation != 0 else params.saturation
-                if saturation_ratio != 1.0:
-                    processed_data = self._image_processor.adjust_saturation(
-                        processed_data, saturation_ratio
-                    )
+            # Применяем насыщенность (только для цветных изображений)
+            if not self._current_image.is_grayscale() and params.saturation != 1.0:
+                processed_data = self._image_processor.adjust_saturation(
+                    processed_data, params.saturation
+                )
             
             # Для поворота применяем полный поворот, так как это дискретная операция
             rotation_delta = params.rotation - self._current_processing_params.rotation
@@ -137,10 +142,24 @@ class ImageService:
             return False
         
         try:
+            # Применяем к базовому изображению (или текущему, если базовое не установлено)
+            base_data = self._base_image_data if self._base_image_data is not None else self._current_image.current_data
+            
             corrected_data = self._image_processor.apply_linear_correction(
-                self._current_image.current_data, factor
+                base_data, factor
             )
-            self._current_image.update_data(corrected_data)
+            
+            # Обновляем базовое изображение
+            self._base_image_data = corrected_data.copy()
+            
+            # Переприменяем параметры яркости/контрастности/насыщенности к новому базовому изображению
+            if self._current_processing_params.brightness != 0 or \
+               self._current_processing_params.contrast != 1.0 or \
+               self._current_processing_params.saturation != 1.0:
+                self.apply_processing_parameters(self._current_processing_params)
+            else:
+                self._current_image.update_data(corrected_data)
+            
             return True
         except Exception:
             return False
@@ -151,10 +170,24 @@ class ImageService:
             return False
         
         try:
+            # Применяем к базовому изображению (или текущему, если базовое не установлено)
+            base_data = self._base_image_data if self._base_image_data is not None else self._current_image.current_data
+            
             corrected_data = self._image_processor.apply_logarithmic_correction(
-                self._current_image.current_data, factor
+                base_data, factor
             )
-            self._current_image.update_data(corrected_data)
+            
+            # Обновляем базовое изображение
+            self._base_image_data = corrected_data.copy()
+            
+            # Переприменяем параметры яркости/контрастности/насыщенности к новому базовому изображению
+            if self._current_processing_params.brightness != 0 or \
+               self._current_processing_params.contrast != 1.0 or \
+               self._current_processing_params.saturation != 1.0:
+                self.apply_processing_parameters(self._current_processing_params)
+            else:
+                self._current_image.update_data(corrected_data)
+            
             return True
         except Exception:
             return False
@@ -165,10 +198,24 @@ class ImageService:
             return False
         
         try:
+            # Применяем к базовому изображению (или текущему, если базовое не установлено)
+            base_data = self._base_image_data if self._base_image_data is not None else self._current_image.current_data
+            
             corrected_data = self._image_processor.apply_gamma_correction(
-                self._current_image.current_data, gamma
+                base_data, gamma
             )
-            self._current_image.update_data(corrected_data)
+            
+            # Обновляем базовое изображение
+            self._base_image_data = corrected_data.copy()
+            
+            # Переприменяем параметры яркости/контрастности/насыщенности к новому базовому изображению
+            if self._current_processing_params.brightness != 0 or \
+               self._current_processing_params.contrast != 1.0 or \
+               self._current_processing_params.saturation != 1.0:
+                self.apply_processing_parameters(self._current_processing_params)
+            else:
+                self._current_image.update_data(corrected_data)
+            
             return True
         except Exception:
             return False
@@ -226,6 +273,8 @@ class ImageService:
             self._is_gray = False
             # Сбрасываем параметры обработки
             self._current_processing_params = ImageProcessingParameters()
+            # Сбрасываем базовое изображение
+            self._base_image_data = self._current_image.original_data.copy()
             return True
         except Exception:
             return False
