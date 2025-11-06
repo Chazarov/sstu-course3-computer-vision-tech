@@ -21,9 +21,13 @@ class Image:
 
 
 class StructuralElement:
-    def __init__(self, kernel: np.ndarray, anchor: Optional[tuple] = None):
+    def __init__(self, kernel: np.ndarray):
         self.kernel = kernel
-        self.anchor = anchor if anchor else (kernel.shape[0] // 2, kernel.shape[1] // 2)
+        
+        anchor_x = kernel.shape[1] // 2
+        anchor_y = kernel.shape[0] // 2
+        print( 'anchor_x: ', anchor_x, 'anchor_y: ', anchor_y)
+        self.anchor = (anchor_x, anchor_y)
 
 
 class MorphologicalOperation(ABC):
