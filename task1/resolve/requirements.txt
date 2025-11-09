@@ -1,7 +1,9 @@
-pillow==11.3.0
-matplotlib==3.10.6
-numpy==2.2.6
-pydantic==2.10.6
-pydantic-settings==2.7.1
-FreeSimpleGUI==5.2.0.post1
-opencv-python==4.12.0.88
+pillow
+matplotlib
+numpy
+pydantic
+pydantic-settings
+FreeSimpleGUI
+opencv-python
+piexif
+exifread

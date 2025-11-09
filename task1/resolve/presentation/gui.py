@@ -62,7 +62,7 @@ class ImageProcessorGUI:
                 [sg.Text('Имя файла:', size=(15, 1)), sg.Text('', key='-FILE_NAME-', size=(25, 1)), sg.Button('Копировать', key='-COPY_NAME-', size=(8, 1))],
             ], font=('Arial', 10), pad=(5, 5))],
             [sg.Frame('EXIF данные', [
-                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 6), disabled=True, font=('Courier', 9), background_color='#f0f0f0')]
+                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 12), disabled=True, font=('Courier', 9), background_color='#f0f0f0', autoscroll=True)]
             ], font=('Arial', 10), pad=(5, 5))],
             [sg.HorizontalSeparator()],
             [sg.Text('Гистограмма:', font=('Arial', 11, 'bold'))],

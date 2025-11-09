@@ -5,7 +5,7 @@ import os
 from typing import Optional, Dict, Any
 import numpy as np
 from PIL import Image as PILImage, ImageEnhance
-from PIL.ExifTags import TAGS
+from PIL.ExifTags import TAGS, GPSTAGS
 
 from domain.models import Image, ImageInfo, ColorModel, ImageFormat
 from domain.interfaces import IImageRepository, IExifReader
@@ -159,50 +159,63 @@ class ExifReader(IExifReader):
     
     def read_exif(self, file_path: str) -> Dict[str, Any]:
         """Читает EXIF данные из файла"""
+        exif_dict = {}
+
+        print(" \n______ read_exif ______")
+        
         try:
+            # Метод 1: getexif()
             with PILImage.open(file_path) as image:
-                exif_dict = {}
-                
-                # Получаем EXIF данные через Pillow
-                exif_data = image._getexif()
-                
-                if exif_data is not None:
+                exif_data = image.getexif()
+                print(exif_data)
+                if exif_data:
                     for tag_id, value in exif_data.items():
-                        tag = TAGS.get(tag_id, tag_id)
-                        
-                        # Преобразуем значение в строку для отображения
-                        if isinstance(value, bytes):
-                            try:
-                                value = value.decode('utf-8')
-                            except UnicodeDecodeError:
-                                value = str(value)
-                        elif isinstance(value, tuple) and len(value) == 2:
-                            # Обрабатываем дроби (например, для выдержки)
-                            try:
-                                value = f"{value[0]}/{value[1]}"
-                            except:
-                                value = str(value)
-                        
+                        tag = TAGS.get(tag_id, f"Tag{tag_id}")
                         exif_dict[str(tag)] = str(value)
                 
-                # Добавляем базовую информацию, если EXIF данных мало
-                if len(exif_dict) < 5:
-                    exif_dict.update({
-                        "Режим изображения": image.mode,
-                        "Размер": f"{image.size[0]}x{image.size[1]}",
-                        "Формат": image.format or "Неизвестно",
-                        "Имеет анимацию": str(getattr(image, 'is_animated', False)),
-                        "Количество кадров": str(getattr(image, 'n_frames', 1))
-                    })
-                
-                return exif_dict
-                
-        except Exception as e:
-            print(f"Ошибка чтения EXIF: {e}")
-            return {
-                "Ошибка": "Не удалось прочитать EXIF данные",
-                "Причина": str(e),
-                "Формат файла": os.path.splitext(file_path)[1].upper(),
-                "Размер файла": f"{os.path.getsize(file_path)} байт",
-                "Статус": "EXIF недоступен"
-            }
+                # Метод 2: _getexif()
+                if hasattr(image, '_getexif') and image._getexif():
+                    for tag_id, value in image._getexif().items():
+                        tag = TAGS.get(tag_id, f"Tag{tag_id}")
+                        if str(tag) not in exif_dict:
+                            exif_dict[str(tag)] = str(value)
+        except:
+            import traceback
+            traceback.print_exc()
+            pass
+        
+        # Метод 3: piexif
+        try:
+            import piexif
+            exif_dict_piexif = piexif.load(file_path)
+            print(exif_dict_piexif)
+            for section in ['0th', 'Exif', 'GPS', '1st', 'Interop']:
+                if section in exif_dict_piexif and exif_dict_piexif[section]:
+                    for tag_id, value in exif_dict_piexif[section].items():
+                        if section == 'GPS':
+                            tag = GPSTAGS.get(tag_id, f"GPS{tag_id}")
+                        else:
+                            tag = TAGS.get(tag_id, f"Tag{tag_id}")
+                        key = f"{section}_{tag}"
+                        if key not in exif_dict:
+                            exif_dict[key] = str(value)
+        except:
+            import traceback
+            traceback.print_exc()
+            pass
+        
+        # Метод 4: exifread
+        try:
+            import exifread
+            with open(file_path, 'rb') as f:
+                tags = exifread.process_file(f, details=True)
+                print(tags)
+                for tag_name, tag_value in tags.items():
+                    if tag_name not in exif_dict:
+                        exif_dict[tag_name] = str(tag_value)
+        except:
+            import traceback
+            traceback.print_exc()
+            pass
+        
+        return exif_dict
