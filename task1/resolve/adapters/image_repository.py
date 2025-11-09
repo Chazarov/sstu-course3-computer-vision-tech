@@ -45,7 +45,7 @@ class PillowImageRepository(IImageRepository):
             return None
     
     def save_image(self, image: Image, file_path: str) -> bool:
-        """Сохраняет изображение в файл"""
+        """Сохраняет изображение в файл с сохранением EXIF данных"""
         try:
             # Преобразуем numpy array в PIL Image
             image_data = image.current_data
@@ -80,8 +80,25 @@ class PillowImageRepository(IImageRepository):
             
             format_name = format_map.get(ext, 'PNG')
             
-            # Сохраняем
-            pil_image.save(file_path, format=format_name)
+            # Пытаемся сохранить EXIF данные из оригинального изображения
+            exif_bytes = None
+            try:
+                # Загружаем оригинальное изображение для получения EXIF
+                original_path = image.file_path
+                if os.path.exists(original_path):
+                    with PILImage.open(original_path) as original_image:
+                        exif_data = original_image.getexif()
+                        if exif_data:
+                            exif_bytes = exif_data.tobytes()
+            except Exception as e:
+                print(f"Предупреждение: не удалось извлечь EXIF данные: {e}")
+            
+            # Сохраняем с EXIF данными для форматов, которые их поддерживают
+            if exif_bytes and format_name in ['JPEG', 'TIFF', 'WEBP']:
+                pil_image.save(file_path, format=format_name, exif=exif_bytes)
+            else:
+                pil_image.save(file_path, format=format_name)
+            
             return True
             
         except Exception as e:
@@ -167,7 +184,7 @@ class ExifReader(IExifReader):
             # Метод 1: getexif()
             with PILImage.open(file_path) as image:
                 exif_data = image.getexif()
-                print(exif_data)
+                print(str(exif_data)[:100] + " ... ")
                 if exif_data:
                     for tag_id, value in exif_data.items():
                         tag = TAGS.get(tag_id, f"Tag{tag_id}")
@@ -184,32 +201,14 @@ class ExifReader(IExifReader):
             traceback.print_exc()
             pass
         
-        # Метод 3: piexif
-        try:
-            import piexif
-            exif_dict_piexif = piexif.load(file_path)
-            print(exif_dict_piexif)
-            for section in ['0th', 'Exif', 'GPS', '1st', 'Interop']:
-                if section in exif_dict_piexif and exif_dict_piexif[section]:
-                    for tag_id, value in exif_dict_piexif[section].items():
-                        if section == 'GPS':
-                            tag = GPSTAGS.get(tag_id, f"GPS{tag_id}")
-                        else:
-                            tag = TAGS.get(tag_id, f"Tag{tag_id}")
-                        key = f"{section}_{tag}"
-                        if key not in exif_dict:
-                            exif_dict[key] = str(value)
-        except:
-            import traceback
-            traceback.print_exc()
-            pass
         
         # Метод 4: exifread
         try:
             import exifread
             with open(file_path, 'rb') as f:
                 tags = exifread.process_file(f, details=True)
-                print(tags)
+                print("_exifread method_:")
+                print(str(tags)[:100] + " ... ")
                 for tag_name, tag_value in tags.items():
                     if tag_name not in exif_dict:
                         exif_dict[tag_name] = str(tag_value)
