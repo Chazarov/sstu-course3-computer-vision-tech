@@ -112,11 +112,17 @@ class ImageService:
                     processed_data, params.saturation
                 )
             
-            # Для поворота применяем полный поворот, так как это дискретная операция
+            # Для поворота применяем дельту и обновляем базовое изображение
+            # так как это геометрическая трансформация
             rotation_delta = params.rotation - self._current_processing_params.rotation
             if rotation_delta != 0:
+                # Поворачиваем обработанные данные
                 processed_data = self._image_processor.rotate_image(
                     processed_data, rotation_delta
+                )
+                # Обновляем базовое изображение с поворотом
+                self._base_image_data = self._image_processor.rotate_image(
+                    self._base_image_data, rotation_delta
                 )
             
             # Если изображение было в градациях серого, принудительно конвертируем результат
