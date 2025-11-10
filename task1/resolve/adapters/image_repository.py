@@ -202,19 +202,4 @@ class ExifReader(IExifReader):
             pass
         
         
-        # Метод 4: exifread
-        try:
-            import exifread
-            with open(file_path, 'rb') as f:
-                tags = exifread.process_file(f, details=True)
-                print("_exifread method_:")
-                print(str(tags)[:100] + " ... ")
-                for tag_name, tag_value in tags.items():
-                    if tag_name not in exif_dict:
-                        exif_dict[tag_name] = str(tag_value)
-        except:
-            import traceback
-            traceback.print_exc()
-            pass
-        
         return exif_dict

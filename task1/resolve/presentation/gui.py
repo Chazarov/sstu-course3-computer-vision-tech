@@ -18,7 +18,8 @@ class ImageProcessorGUI:
         
         self._processing_params = ImageProcessingParameters()
         
-        sg.theme('LightBlue3')
+        # Настраиваем кастомную тему с указанными цветами
+        self._setup_custom_theme()
         
         self._image_file_types = (
             ("Все изображения", "*.jpg *.jpeg *.png *.bmp *.tiff *.gif *.webp"),
@@ -31,91 +32,156 @@ class ImageProcessorGUI:
             ("Все файлы", "*.*")
         )
     
+    def _setup_custom_theme(self) -> None:
+        """Настраивает кастомную тему с указанными цветами"""
+        # Создаем кастомную тему
+        custom_theme = {
+            'BACKGROUND': '#422F28',
+            'TEXT': '#CDB89D',
+            'INPUT': '#6A6F4C',
+            'TEXT_INPUT': '#CDB89D',
+            'SCROLL': '#5E2611',
+            'BUTTON': ('#CDB89D', '#6A6F4C'),  # (текст, фон)
+            'PROGRESS': ('#6A6F4C', '#5E2611'),
+            'BORDER': 1,
+            'SLIDER_DEPTH': 0,
+            'PROGRESS_DEPTH': 0,
+        }
+        
+        sg.theme_add_new('CustomDark', custom_theme)
+        sg.theme('CustomDark')
+        
+        # Настраиваем параметры кнопок по умолчанию
+        sg.set_options(
+            button_color=('#CDB89D', '#6A6F4C'),
+            border_width=2,
+            element_padding=(5, 5),
+            font=('Arial', 10),
+            text_color='#CDB89D',
+            background_color='#422F28',
+            element_background_color='#422F28',
+            input_elements_background_color='#6A6F4C',
+            input_text_color='#CDB89D',
+            scrollbar_color='#5E2611'
+        )
+        
+        # Применяем стили для закругленных кнопок через ttk
+        try:
+            import tkinter.ttk as ttk
+            style = ttk.Style()
+            style.theme_use('clam')
+            
+            # Настройка стиля кнопок с закруглением
+            style.configure('Rounded.TButton',
+                          background='#6A6F4C',
+                          foreground='#CDB89D',
+                          bordercolor='#5E2611',
+                          borderwidth=3,
+                          relief='raised',
+                          font=('Arial', 10, 'bold'))
+            
+            style.map('Rounded.TButton',
+                     background=[('active', '#7A7F5C'), ('pressed', '#5A5F4C')],
+                     foreground=[('active', '#CDB89D')],
+                     relief=[('pressed', 'sunken')])
+        except Exception as e:
+            print(f"Предупреждение: не удалось настроить ttk стили: {e}")
+    
     def create_layout(self) -> list:
         """Создает макет интерфейса"""
         
+        # Параметры для кнопок с анимацией и закругленными краями
+        button_style = {
+            'button_color': ('#CDB89D', '#6A6F4C'),
+            'border_width': 3,
+            'mouseover_colors': ('#CDB89D', '#7A7F5C'),  # Светлее при наведении
+            'font': ('Arial', 10, 'bold'),
+            'pad': (10, 5),  # Отступы внутри кнопки для более объемного вида
+            'auto_size_button': False
+        }
+        
         # Колонка с изображением
         image_column = [
-            [sg.Text('Изображение:', font=('Arial', 12, 'bold'))],
-            [sg.Image(key='-IMAGE-', size=(800, 600))],
+            [sg.Text('Изображение:', font=('Arial', 12, 'bold'), text_color='#CDB89D')],
+            [sg.Image(key='-IMAGE-', size=(800, 600), background_color='#422F28')],
             [sg.HorizontalSeparator()],
             [
-                sg.Button('Загрузить изображение', key='-LOAD-', size=(20, 1)),
-                sg.Button('Сохранить изображение', key='-SAVE-', size=(20, 1), disabled=True),
-                sg.Button('Сбросить к оригиналу', key='-RESET-', size=(20, 1), disabled=True)
+                sg.Button('Загрузить изображение', key='-LOAD-', size=(20, 1), **button_style),
+                sg.Button('Сохранить изображение', key='-SAVE-', size=(20, 1), disabled=True, **button_style),
+                sg.Button('Сбросить к оригиналу', key='-RESET-', size=(20, 1), disabled=True, **button_style)
             ]
         ]
         
         # Колонка с информацией об изображении
         info_column = [
-            [sg.Text('Информация об изображении:', font=('Arial', 12, 'bold'))],
+            [sg.Text('Информация об изображении:', font=('Arial', 12, 'bold'), text_color='#CDB89D')],
             [sg.Frame('Основные параметры', [
-                [sg.Text('Размер файла:', size=(15, 1)), sg.Text('', key='-FILE_SIZE-', size=(25, 1))],
-                [sg.Text('Разрешение:', size=(15, 1)), sg.Text('', key='-RESOLUTION-', size=(25, 1))],
-                [sg.Text('Глубина цвета:', size=(15, 1)), sg.Text('', key='-COLOR_DEPTH-', size=(25, 1))],
-                [sg.Text('Формат файла:', size=(15, 1)), sg.Text('', key='-FORMAT-', size=(25, 1))],
-                [sg.Text('Цветовая модель:', size=(15, 1)), sg.Text('', key='-COLOR_MODEL-', size=(25, 1))],
-                [sg.Text('Модифицировано:', size=(15, 1)), sg.Text('', key='-MODIFIED-', size=(25, 1))],
-            ], font=('Arial', 10), pad=(5, 5))],
+                [sg.Text('Размер файла:', size=(15, 1), text_color='#CDB89D'), sg.Text('', key='-FILE_SIZE-', size=(25, 1), text_color='#CDB89D')],
+                [sg.Text('Разрешение:', size=(15, 1), text_color='#CDB89D'), sg.Text('', key='-RESOLUTION-', size=(25, 1), text_color='#CDB89D')],
+                [sg.Text('Глубина цвета:', size=(15, 1), text_color='#CDB89D'), sg.Text('', key='-COLOR_DEPTH-', size=(25, 1), text_color='#CDB89D')],
+                [sg.Text('Формат файла:', size=(15, 1), text_color='#CDB89D'), sg.Text('', key='-FORMAT-', size=(25, 1), text_color='#CDB89D')],
+                [sg.Text('Цветовая модель:', size=(15, 1), text_color='#CDB89D'), sg.Text('', key='-COLOR_MODEL-', size=(25, 1), text_color='#CDB89D')],
+                [sg.Text('Модифицировано:', size=(15, 1), text_color='#CDB89D'), sg.Text('', key='-MODIFIED-', size=(25, 1), text_color='#CDB89D')],
+            ], font=('Arial', 10), pad=(5, 5), title_color='#CDB89D', background_color='#422F28', border_width=2, relief='solid')],
             [sg.Frame('Дополнительная информация', [
-                [sg.Text('Путь к файлу:', size=(15, 1)), sg.Text('', key='-FILE_PATH-', size=(25, 1)), sg.Button('Копировать', key='-COPY_PATH-', size=(8, 1))],
-                [sg.Text('Имя файла:', size=(15, 1)), sg.Text('', key='-FILE_NAME-', size=(25, 1)), sg.Button('Копировать', key='-COPY_NAME-', size=(8, 1))],
-            ], font=('Arial', 10), pad=(5, 5))],
+                [sg.Text('Путь к файлу:', size=(10, 1), text_color='#CDB89D'), sg.Text('', key='-FILE_PATH-', size=(22, 1), text_color='#CDB89D'), sg.Button('Копировать', key='-COPY_PATH-', size=(12, 1), **button_style)],
+                [sg.Text('Имя файла:', size=(10, 1), text_color='#CDB89D'), sg.Text('', key='-FILE_NAME-', size=(22, 1), text_color='#CDB89D'), sg.Button('Копировать', key='-COPY_NAME-', size=(12, 1), **button_style)],
+            ], font=('Arial', 10), pad=(5, 5), title_color='#CDB89D', background_color='#422F28', border_width=2, relief='solid')],
             [sg.Frame('EXIF данные', [
-                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 12), disabled=True, font=('Courier', 9), background_color='#f0f0f0', autoscroll=True)]
-            ], font=('Arial', 10), pad=(5, 5))],
+                [sg.Multiline('', key='-EXIF_INFO-', size=(40, 12), disabled=True, font=('Courier', 9), background_color='#5E2611', text_color='#CDB89D', autoscroll=True)]
+            ], font=('Arial', 10), pad=(5, 5), title_color='#CDB89D', background_color='#422F28', border_width=2, relief='solid')],
             [sg.HorizontalSeparator()],
-            [sg.Text('Гистограмма:', font=('Arial', 11, 'bold'))],
+            [sg.Text('Гистограмма:', font=('Arial', 11, 'bold'), text_color='#CDB89D')],
             [
-                sg.Button('Показать текущую', key='-HIST_CURRENT-', size=(18, 1), disabled=True),
-                sg.Button('Показать оригинальную', key='-HIST_ORIGINAL-', size=(18, 1), disabled=True)
+                sg.Button('Показать текущую', key='-HIST_CURRENT-', size=(18, 1), disabled=True, **button_style),
+                sg.Button('Показать оригинальную', key='-HIST_ORIGINAL-', size=(18, 1), disabled=True, **button_style)
             ],
             [
-                sg.Button('Сравнить гистограммы', key='-HIST_COMPARE-', size=(37, 1), disabled=True)
+                sg.Button('Сравнить гистограммы', key='-HIST_COMPARE-', size=(37, 1), disabled=True, **button_style)
             ]
         ]
 
         processing_column = [
-            [sg.Text('Параметры обработки:', font=('Arial', 12, 'bold'))],
+            [sg.Text('Параметры обработки:', font=('Arial', 12, 'bold'), text_color='#CDB89D')],
             [
-                sg.Text('Яркость:', size=(12, 1)),
-                sg.Slider(range=(-100, 100), default_value=0, orientation='h', size=(15, 15), key='-BRIGHTNESS-'),
-                sg.Button('Применить', key='-BRIGHTNESS_APPLY-', size=(8, 1), disabled=True)
+                sg.Text('Яркость:', size=(12, 1), text_color='#CDB89D'),
+                sg.Slider(range=(-100, 100), default_value=0, orientation='h', size=(15, 15), key='-BRIGHTNESS-', background_color='#6A6F4C', trough_color='#5E2611'),
+                sg.Button('Применить', key='-BRIGHTNESS_APPLY-', size=(8, 1), disabled=True, **button_style)
             ],
             [
-                sg.Text('Контрастность:', size=(12, 1)),
+                sg.Text('Контрастность:', size=(12, 1), text_color='#CDB89D'),
                 sg.Slider(range=(0.1, 3.0), default_value=1.0, resolution=0.1, orientation='h',
-                         size=(15, 15), key='-CONTRAST-'),
-                sg.Button('Применить', key='-CONTRAST_APPLY-', size=(8, 1), disabled=True)
+                         size=(15, 15), key='-CONTRAST-', background_color='#6A6F4C', trough_color='#5E2611'),
+                sg.Button('Применить', key='-CONTRAST_APPLY-', size=(8, 1), disabled=True, **button_style)
             ],
             [
-                sg.Text('Насыщенность:', size=(12, 1)),
+                sg.Text('Насыщенность:', size=(12, 1), text_color='#CDB89D'),
                 sg.Slider(range=(0.0, 3.0), default_value=1.0, resolution=0.1, orientation='h',
-                         size=(15, 15), key='-SATURATION-'),
-                sg.Button('Применить', key='-SATURATION_APPLY-', size=(8, 1), disabled=True)
+                         size=(15, 15), key='-SATURATION-', background_color='#6A6F4C', trough_color='#5E2611'),
+                sg.Button('Применить', key='-SATURATION_APPLY-', size=(8, 1), disabled=True, **button_style)
             ],
             [sg.HorizontalSeparator()],
-            [sg.Text('Преобразования:', font=('Arial', 11, 'bold'))],
+            [sg.Text('Преобразования:', font=('Arial', 11, 'bold'), text_color='#CDB89D')],
             [
-                sg.Button('В градации серого', key='-GRAYSCALE-', size=(18, 1), disabled=True),
-                sg.Button('Повернуть на 90°', key='-ROTATE-', size=(18, 1), disabled=True)
+                sg.Button('В градации серого', key='-GRAYSCALE-', size=(18, 1), disabled=True, **button_style),
+                sg.Button('Повернуть на 90°', key='-ROTATE-', size=(18, 1), disabled=True, **button_style)
             ],
             [sg.HorizontalSeparator()],
-            [sg.Text('Коррекция изображения:', font=('Arial', 11, 'bold'))],
+            [sg.Text('Коррекция изображения:', font=('Arial', 11, 'bold'), text_color='#CDB89D')],
             [
-                sg.Text('Линейная:', size=(8, 1)),
-                sg.Slider(range=(0.1, 2.0), default_value=1.0, resolution=0.1, orientation='h', size=(15, 15), key='-LINEAR_FACTOR-', enable_events=True),
-                sg.Button('Применить', key='-LINEAR_CORRECT-', size=(8, 1), disabled=True)
+                sg.Text('Линейная:', size=(8, 1), text_color='#CDB89D'),
+                sg.Slider(range=(0.1, 2.0), default_value=1.0, resolution=0.1, orientation='h', size=(15, 15), key='-LINEAR_FACTOR-', enable_events=True, background_color='#6A6F4C', trough_color='#5E2611'),
+                sg.Button('Применить', key='-LINEAR_CORRECT-', size=(8, 1), disabled=True, **button_style)
             ],
             [
-                sg.Text('Логарифмическая:', size=(12, 1)),
-                sg.Slider(range=(0.1, 2.0), default_value=1.0, resolution=0.1, orientation='h', size=(11, 15), key='-LOG_FACTOR-', enable_events=True),
-                sg.Button('Применить', key='-LOG_CORRECT-', size=(8, 1), disabled=True)
+                sg.Text('Логарифмическая:', size=(12, 1), text_color='#CDB89D'),
+                sg.Slider(range=(0.1, 2.0), default_value=1.0, resolution=0.1, orientation='h', size=(11, 15), key='-LOG_FACTOR-', enable_events=True, background_color='#6A6F4C', trough_color='#5E2611'),
+                sg.Button('Применить', key='-LOG_CORRECT-', size=(8, 1), disabled=True, **button_style)
             ],
             [
-                sg.Text('Гамма:', size=(8, 1)),
-                sg.Slider(range=(0.1, 3.0), default_value=1.0, resolution=0.1, orientation='h', size=(15, 15), key='-GAMMA_FACTOR-', enable_events=True),
-                sg.Button('Применить', key='-GAMMA_CORRECT-', size=(8, 1), disabled=True)
+                sg.Text('Гамма:', size=(8, 1), text_color='#CDB89D'),
+                sg.Slider(range=(0.1, 3.0), default_value=1.0, resolution=0.1, orientation='h', size=(15, 15), key='-GAMMA_FACTOR-', enable_events=True, background_color='#6A6F4C', trough_color='#5E2611'),
+                sg.Button('Применить', key='-GAMMA_CORRECT-', size=(8, 1), disabled=True, **button_style)
             ]
         ]
         right_column_scrollable = [
@@ -125,7 +191,7 @@ class ImageProcessorGUI:
         ]
         layout = [
             [
-                sg.Column(image_column, vertical_alignment='top'),
+                sg.Column(image_column, vertical_alignment='top', background_color='#422F28'),
                 sg.VerticalSeparator(),
                 sg.Column(
                     right_column_scrollable, 
@@ -133,14 +199,15 @@ class ImageProcessorGUI:
                     scrollable=True,
                     vertical_scroll_only=True,
                     size=(450, 700),
-                    pad=(5, 5)
+                    pad=(5, 5),
+                    background_color='#422F28'
                 )
             ],
             [sg.HorizontalSeparator()],
             [
-                sg.Text('Статус: Готов к работе', key='-STATUS-'),
+                sg.Text('Статус: Готов к работе', key='-STATUS-', text_color='#CDB89D'),
                 sg.Push(),
-                sg.Button('Выход', key='-EXIT-')
+                sg.Button('Выход', key='-EXIT-', **button_style)
             ]
         ]
         
@@ -414,9 +481,16 @@ class ImageProcessorGUI:
     
     def create_histogram_window(self, histogram_bytes: bytes, title: str) -> None:
         """Создает окно с гистограммой"""
+        button_style = {
+            'button_color': ('#CDB89D', '#6A6F4C'),
+            'border_width': 3,
+            'mouseover_colors': ('#CDB89D', '#7A7F5C'),
+            'font': ('Arial', 10, 'bold')
+        }
+        
         layout = [
-            [sg.Image(data=histogram_bytes)],
-            [sg.Button('Закрыть', key='-CLOSE_HIST-')]
+            [sg.Image(data=histogram_bytes, background_color='#422F28')],
+            [sg.Button('Закрыть', key='-CLOSE_HIST-', **button_style)]
         ]
         
         if self._current_histogram_window:
@@ -427,20 +501,28 @@ class ImageProcessorGUI:
             layout,
             finalize=True,
             modal=False,
-            location=(200, 200)
+            location=(200, 200),
+            background_color='#422F28'
         )
     
     def create_comparison_window(self, original_bytes: bytes, current_bytes: bytes) -> None:
         """Создает окно сравнения гистограмм с горизонтальным расположением"""
+        button_style = {
+            'button_color': ('#CDB89D', '#6A6F4C'),
+            'border_width': 3,
+            'mouseover_colors': ('#CDB89D', '#7A7F5C'),
+            'font': ('Arial', 10, 'bold')
+        }
+        
         layout = [
             [
-                sg.Column([[sg.Text('Оригинальная гистограмма:', font=('Arial', 12, 'bold'))],
-                        [sg.Image(data=original_bytes)]], vertical_alignment='top'),
+                sg.Column([[sg.Text('Оригинальная гистограмма:', font=('Arial', 12, 'bold'), text_color='#CDB89D')],
+                        [sg.Image(data=original_bytes, background_color='#422F28')]], vertical_alignment='top', background_color='#422F28'),
                 sg.VerticalSeparator(),
-                sg.Column([[sg.Text('Текущая гистограмма:', font=('Arial', 12, 'bold'))],
-                        [sg.Image(data=current_bytes)]], vertical_alignment='top')
+                sg.Column([[sg.Text('Текущая гистограмма:', font=('Arial', 12, 'bold'), text_color='#CDB89D')],
+                        [sg.Image(data=current_bytes, background_color='#422F28')]], vertical_alignment='top', background_color='#422F28')
             ],
-            [sg.Button('Закрыть', key='-CLOSE_COMP-')]
+            [sg.Button('Закрыть', key='-CLOSE_COMP-', **button_style)]
         ]
 
         if self._current_histogram_window:
@@ -452,7 +534,8 @@ class ImageProcessorGUI:
             finalize=True,
             modal=False,
             location=(200, 200),
-            resizable=True
+            resizable=True,
+            background_color='#422F28'
         )
     
     def run(self) -> None:
