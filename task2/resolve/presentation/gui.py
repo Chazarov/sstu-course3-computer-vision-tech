@@ -137,11 +137,15 @@ class ImageViewer:
         ttk.Label(size_frame, text="x").grid(row=0, column=1, padx=2)
         ttk.Spinbox(size_frame, from_=1, to=20, textvariable=self.cols_var, width=5).grid(row=0, column=2, padx=2)
         ttk.Button(size_frame, text="Создать", command=self.create_kernel_matrix).grid(row=0, column=3, padx=5)
+        ttk.Button(size_frame, text="0", width=3, command=lambda: self.set_kernel_values(False)).grid(row=0, column=4, padx=2)
+        ttk.Button(size_frame, text="1", width=3, command=lambda: self.set_kernel_values(True)).grid(row=0, column=5, padx=2)
+        
         
         self.kernel_entries_frame = ttk.Frame(kernel_frame)
         self.kernel_entries_frame.grid(row=1, column=0, columnspan=2, pady=10)
         
         ttk.Button(kernel_frame, text="✅ Применить", command=self.apply_operation).grid(row=2, column=0, columnspan=2, pady=10)
+
         
         self.create_kernel_matrix()
         
@@ -201,6 +205,13 @@ class ImageViewer:
                 self.kernel_entries.append(row_entries)
         except ValueError:
             messagebox.showerror("Ошибка", "Некорректное значение размерности")
+    
+    def set_kernel_values(self, value: bool):
+        if not hasattr(self, "kernel_entries"):
+            return
+        for row in getattr(self, "kernel_entries", []):
+            for cell in row:
+                cell.set(bool(value))
     
     def create_custom_kernel_matrix(self):
         for widget in self.custom_kernel_entries_frame.winfo_children():
