@@ -69,7 +69,11 @@ class MainWindow:
         self.size_var = tk.StringVar(value="3")
         size_entry = ttk.Entry(control_frame, textvariable=self.size_var, width=5)
         size_entry.pack(side=tk.LEFT, padx=5)
-        ttk.Button(control_frame, text="Установить", command=self._setup_kernel).pack(side=tk.LEFT, padx=5)
+        
+        kernel_buttons_frame = ttk.Frame(control_frame)
+        kernel_buttons_frame.pack(side=tk.LEFT, padx=2)
+        ttk.Button(kernel_buttons_frame, text="0", width=2, command=lambda: self._fill_kernel(0)).pack(side=tk.LEFT, padx=5)
+        ttk.Button(kernel_buttons_frame, text="1", width=2, command=lambda: self._fill_kernel(1)).pack(side=tk.LEFT, padx=5)
         
         ttk.Label(control_frame, text="Матрица ядра:").pack(side=tk.LEFT, padx=(20, 5))
         self.kernel_text = tk.Text(control_frame, width=30, height=5)
@@ -110,6 +114,15 @@ class MainWindow:
         for row in kernel:
             rows.append(" ".join(map(str, row.tolist())))
         self.kernel_text.insert("1.0", "\n".join(rows))
+    
+    def _fill_kernel(self, value: int):
+        try:
+            structural_element = self._parse_kernel()
+            kernel_shape = structural_element.kernel.shape
+            kernel_matrix = np.full(kernel_shape, value, dtype=np.uint8)
+            self._update_kernel_text(kernel_matrix)
+        except ValueError as e:
+            messagebox.showerror("Ошибка", str(e))
     
     def _parse_kernel(self) -> StructuralElement:
         try:
